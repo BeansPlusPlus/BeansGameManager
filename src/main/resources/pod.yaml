@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: PODNAME
+spec:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+  initContainers:
+    - name: mod-download
+      image: alpine
+      command:
+        - wget
+        - https://saggyresourcepack.blob.core.windows.net/www/JARNAME
+        - -P
+        - /data/plugins
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL
+      volumeMounts:
+        - name: plugins
+          mountPath: "/data/plugins"
+  containers:
+    - name: minecraft-server
+      image: itzg/minecraft-server
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL
+      env:
+        - name: EULA
+          value: "TRUE"
+        - name: VERSION
+          value: "1.19.2"
+        - name: TYPE
+          value: PAPER
+        - name: MOTD
+          value: Beans++
+        - name: DIFFICULTY
+          value: normal
+        - name: ENABLE_AUTOSTOP
+          value: "TRUE"
+        - name: ONLINE_MODE  # needed for bungeecord
+          value: "FALSE"
+      readinessProbe:
+        exec:
+          command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
+        initialDelaySeconds: 20
+        periodSeconds: 5
+        failureThreshold: 20
+      livenessProbe:
+        exec:
+          command: ["/usr/local/bin/mc-monitor", "status", "--host", "localhost"]
+        initialDelaySeconds: 120
+        periodSeconds: 60
+      resources:
+        requests:
+          memory: "1Gi"
+          cpu: "1000m"
+          ephemeral-storage: "2Gi"
+        limits:
+          memory: "3Gi"
+          cpu: "3000m"
+          ephemeral-storage: "10Gi"
+      ports:
+        - containerPort: 25565
+      volumeMounts:
+        - name: plugins
+          mountPath: /data/plugins
+  restartPolicy: OnFailure
+  volumes:
+    - name: plugins
+      emptyDir: {}

@@ -58,6 +58,7 @@ public class GameCommand extends Command {
 
   private void create(ProxiedPlayer p, String[] args) {
     if (args.length < 2) {
+      p.sendMessage(new ComponentBuilder("Create takes one argument. For example:").color(ChatColor.RED).create());
       printTypes(p);
 
       return;
@@ -65,6 +66,7 @@ public class GameCommand extends Command {
     GameType type = GameType.byString(args[1]);
 
     if (type == null) {
+      p.sendMessage(new ComponentBuilder("Game type is needed. For example:").color(ChatColor.RED).create());
       printTypes(p);
 
       return;

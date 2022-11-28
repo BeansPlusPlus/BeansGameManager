@@ -12,4 +12,9 @@ repositories {
 
 dependencies {
     compileOnly 'net.md-5:bungeecord-api:1.19-R0.1-SNAPSHOT'
+    // https://mvnrepository.com/artifact/io.kubernetes/client-java-api-fluent
+    implementation 'io.kubernetes:client-java-api-fluent:15.0.1'
+    // https://mvnrepository.com/artifact/io.kubernetes/client-java
+    implementation 'io.kubernetes:client-java:15.0.1'
+
 }

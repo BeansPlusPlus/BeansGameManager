@@ -1,8 +1,18 @@
 package beansplusplus.lobby;
 
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1ObjectMetaBuilder;
+import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.util.Config;
+import io.kubernetes.client.util.Yaml;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.config.ServerInfo;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.*;
 
@@ -16,6 +26,8 @@ public class GameManager {
   private final Random random = new Random();
 
   private final Map<String, GameServer> gameServers = new HashMap<>();
+
+  private static V1Pod podTemplate = null;
 
   /**
    * Create a new server by game type
@@ -66,7 +78,35 @@ public class GameManager {
 
     // at the moment this is just a dummy IP
 
-    return InetSocketAddress.createUnresolved("localhost", 6662);
+    System.out.println("Starting server...");
+
+    try {
+
+      Yaml.addModelMap("v1", "Pod", V1Pod.class); // idk if this is needed
+
+      if (podTemplate == null) {
+        podTemplate = (V1Pod)Yaml.load(new File("pod.yaml"));
+      }
+
+      ApiClient client = Config.defaultClient();
+      Configuration.setDefaultApiClient(client);
+
+      CoreV1Api api = new CoreV1Api();
+
+      podTemplate.setMetadata(new V1ObjectMetaBuilder().withName("beans-mini-game-1").build());
+
+      System.out.println(Yaml.dump(podTemplate));
+
+      V1Pod createdPod = api.createNamespacedPod("beans-mini-games", podTemplate, null, null, null, null);
+
+      return InetSocketAddress.createUnresolved(createdPod.getStatus().getPodIP(), 25565);
+    } catch (IOException e) {
+      e.printStackTrace();
+    } catch (ApiException e) {
+      e.printStackTrace();
+    }
+    System.out.println("Retuning NULL");
+    return null;
   }
 
   private void registerServer(GameServer gameServer, InetSocketAddress address) {
