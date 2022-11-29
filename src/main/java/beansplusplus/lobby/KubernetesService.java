@@ -40,7 +40,7 @@ public class KubernetesService {
 
   private static final V1Pod POD_TEMPLATE = createPodTemplate();
 
-  private static final V1ConfigMap CONFIGMAP_TEMPLATE = createConfigMapTemplate();
+  //private static final V1ConfigMap CONFIGMAP_TEMPLATE = createConfigMapTemplate();
 
   public static final ApiClient CLIENT = setupClient();
 
@@ -91,12 +91,12 @@ public class KubernetesService {
       V1Pod pod = POD_TEMPLATE.metadata(POD_TEMPLATE.getMetadata().name(podName));
       pod.getSpec().getInitContainers().get(0).setCommand(initCommand);
 
-      V1ConfigMap config = CONFIGMAP_TEMPLATE.metadata(CONFIGMAP_TEMPLATE.getMetadata().name(configMapName));
+      //V1ConfigMap config = CONFIGMAP_TEMPLATE.metadata(CONFIGMAP_TEMPLATE.getMetadata().name(configMapName));
 
       System.out.println(Yaml.dump(pod));
       System.out.println(Yaml.dump(config));
 
-      API.createNamespacedConfigMap(K8S_NAMESPACE, config, null, null, null, null);
+      //API.createNamespacedConfigMap(K8S_NAMESPACE, config, null, null, null, null);
       API.createNamespacedPod(K8S_NAMESPACE, pod, null, null, null, null);
 
       // Wait for pod to start then return IP
