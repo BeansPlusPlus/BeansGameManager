@@ -9,6 +9,7 @@ spec:
   #  runAsUser: 1000
   #  runAsGroup: 1000
   #  fsGroup: 1000
+  serviceAccountName: beans-bungeecord
   containers:
   - name: bungeecord-server
     image: itzg/bungeecord
@@ -71,6 +72,32 @@ data:
         motd: 'Beans++ lobby'
         address: ellie-lifted:25569  # i swear that wasn't intentional
         restricted: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: beans-bungeecord
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: beans-bungeecord
+subjects:
+- kind: ServiceAccount
+  name: beans-bungeecord
+roleRef:
+  kind: Role 
+  name: beans-bungeecord
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: beans-bungeecord
 ---
 apiVersion: v1
 kind: Service
