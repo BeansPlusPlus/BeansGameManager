@@ -38,11 +38,21 @@ public class GameManager {
   public GameServer createServer(GameType type) {
     GameServer gameServer = new GameServer(type, generateId());
 
-    InetSocketAddress address = startServer(gameServer.getId());
+    KubernetesService service = new KubernetesService(gameServer);
 
-    registerServer(gameServer, address);
+    try {
+      InetSocketAddress address = service.start();
 
-    return gameServer;
+      registerServer(gameServer, address);
+
+      return gameServer;
+    } catch (KubernetesService.KubernetesException e) {
+      ProxyServer.getInstance().getLogger().severe("Failed to start kubernetes pod. Printing stacktrace...");
+
+      e.logStacktrace(ProxyServer.getInstance().getLogger());
+
+      return null;
+    }
   }
 
   /**
@@ -66,33 +76,6 @@ public class GameManager {
    */
   public Collection<String> getAvailableGameIds() {
     return gameServers.keySet();
-  }
-
-  /**
-   * Start up a new server
-   *
-   * @return
-   */
-  private InetSocketAddress startServer(String gameId) {
-    try {
-      if (podTemplate == null) {
-        podTemplate = (V1Pod)Yaml.load(new File("pod.yaml"));
-      }
-
-      ApiClient client = Config.defaultClient();
-      Configuration.setDefaultApiClient(client);
-
-      CoreV1Api api = new CoreV1Api();
-
-      podTemplate.setMetadata(new V1ObjectMetaBuilder().withName("beans-mini-game-" + gameId).build());
-
-      V1Pod createdPod = api.createNamespacedPod("beans-mini-games", podTemplate, null, null, null, null);
-
-      return InetSocketAddress.createUnresolved(createdPod.getStatus().getPodIP(), 25565);
-    } catch (IOException | ApiException e) {
-      e.printStackTrace();
-    }
-    return null;
   }
 
   private void registerServer(GameServer gameServer, InetSocketAddress address) {
