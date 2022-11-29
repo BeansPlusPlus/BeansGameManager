@@ -60,6 +60,11 @@ metadata:
   name: beans-bungeecord
 data:
   config.yml: |
+    groups:
+      boxhead_crafter:
+      - admin
+      Tomay0:
+      - admin
     ip_forward: true
     listeners:
       - priorities: 
@@ -104,7 +109,7 @@ kind: Service
 metadata:
   name: beans-bungeecord
   annotations:
-    "mc-router.itzg.me/externalServerName": "beans.isaacirvine.me"
+    "mc-router.itzg.me/externalServerName": "test.beans.isaacirvine.me"
 spec:
   selector:
     app: beans-bungeecord
