@@ -6,6 +6,7 @@ import net.md_5.bungee.api.plugin.Plugin;
 public class LobbyPlugin extends Plugin {
   @Override
   public void onEnable() {
+
     getLogger().info("Enabled LobbyPlugin");
 
     ProxyServer.getInstance().getPluginManager().registerCommand(this, new GameCommand());
