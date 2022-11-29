@@ -15,6 +15,7 @@ import okhttp3.Call;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class KubernetesService {
@@ -73,7 +74,7 @@ public class KubernetesService {
     try {
       String podName = "beans-mini-game-" + server.getId();
 
-      String jarUrl = server.getType().getJarURL(); // TODO use this
+      String jarUrl = server.getType().getJarURL();
 
       V1Pod pod = new V1PodBuilder()
           .withNewMetadataLike(POD_TEMPLATE.getMetadata())
@@ -83,7 +84,10 @@ public class KubernetesService {
           .endSpec()
           .build();
 
-      V1Pod createdPod = API.createNamespacedPod(K8S_NAMESPACE, pod, null, null, null, null);
+      List<String> initCommand = List.of(new String[]{"wget", jarUrl, "-P", "/data/plugins"});
+      pod.getSpec().getInitContainers().get(0).setCommand(initCommand);
+
+      API.createNamespacedPod(K8S_NAMESPACE, pod, null, null, null, null);
 
       // Wait for pod to start then return IP
       Call call = API.listNamespacedPodCall(K8S_NAMESPACE, null, null, null, null, null, null, null, null, 300, true, null);
