@@ -73,9 +73,8 @@ public class KubernetesService {
     try {
       String podName = "beans-mini-game-" + server.getId();
 
-      String jarUrl = server.getType().getJarURL();
+      String jarUrl = server.getType().getJarURL(); // TODO use this
 
-      // TODO meta data to pass game type
       V1Pod pod = new V1PodBuilder()
           .withNewMetadataLike(POD_TEMPLATE.getMetadata())
           .withName("beans-mini-game-" + server.getId())
