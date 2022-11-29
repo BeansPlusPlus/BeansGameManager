@@ -90,6 +90,7 @@ public class KubernetesService {
 
       V1Pod pod = POD_TEMPLATE.metadata(POD_TEMPLATE.getMetadata().name(podName));
       pod.getSpec().getInitContainers().get(0).setCommand(initCommand);
+      pod.getSpec().getVolumes().get(1).getConfigMap().setName(configMapName);
 
       V1ConfigMap config = CONFIGMAP_TEMPLATE.metadata(CONFIGMAP_TEMPLATE.getMetadata().name(configMapName));
 
