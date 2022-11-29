@@ -18,9 +18,6 @@ public class GameManager {
 
   private final Map<String, GameServer> gameServers = new HashMap<>();
 
-  private static V1Pod podTemplate = null;
-
-
   /**
    * Create a new server by game type
    *
