@@ -1,0 +1,31 @@
+name: Build and Release
+on: 
+  push:
+    branches:
+      - main
+jobs:
+  build_and_upload:
+    name: Build and Upload
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 16
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Execute Gradle build
+        run: gradle jar
+
+      - uses: bacongobbler/azure-blob-storage-upload@main
+        with:
+          source_dir: build/libs  # This folder should contain only the Jar file
+          container_name: www
+          account_name: saggyresourcepack
+          sas_token: ${{ secrets.StorageSAS }}
+          overwrite: 'true'

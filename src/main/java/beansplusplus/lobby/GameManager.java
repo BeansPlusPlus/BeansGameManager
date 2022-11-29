@@ -1,18 +1,9 @@
 package beansplusplus.lobby;
 
-import io.kubernetes.client.openapi.ApiClient;
-import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.Configuration;
-import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.models.V1ObjectMetaBuilder;
 import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.util.Config;
-import io.kubernetes.client.util.Yaml;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.config.ServerInfo;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.*;
 
@@ -28,6 +19,7 @@ public class GameManager {
   private final Map<String, GameServer> gameServers = new HashMap<>();
 
   private static V1Pod podTemplate = null;
+
 
   /**
    * Create a new server by game type
@@ -49,7 +41,7 @@ public class GameManager {
     } catch (KubernetesService.KubernetesException e) {
       ProxyServer.getInstance().getLogger().severe("Failed to start kubernetes pod. Printing stacktrace...");
 
-      e.logStacktrace(ProxyServer.getInstance().getLogger());
+      e.logError(ProxyServer.getInstance().getLogger());
 
       return null;
     }
