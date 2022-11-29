@@ -73,7 +73,8 @@ public class KubernetesService {
     try {
       String podName = "beans-mini-game-" + server.getId();
 
-      // TODO meta data to pass game type? Or do we want different pod yamls per type?
+      String jarUrl = server.getType().getJarURL(); // TODO use this
+
       V1Pod pod = new V1PodBuilder()
           .withNewMetadataLike(POD_TEMPLATE.getMetadata())
           .withName("beans-mini-game-" + server.getId())
@@ -86,7 +87,8 @@ public class KubernetesService {
 
       // Wait for pod to start then return IP
       Call call = API.listNamespacedPodCall(K8S_NAMESPACE, null, null, null, null, null, null, null, null, 300, true, null);
-      Watch<V1Pod> watch = Watch.createWatch(CLIENT, call, new TypeToken<Watch.Response<V1Pod>>() {}.getType());
+      Watch<V1Pod> watch = Watch.createWatch(CLIENT, call, new TypeToken<Watch.Response<V1Pod>>() {
+      }.getType());
       for (Watch.Response<V1Pod> event : watch) {
         V1Pod p = event.object;
         if (p.getMetadata().getName().equals(podName) && p.getStatus().getPhase().equals("Running")) {

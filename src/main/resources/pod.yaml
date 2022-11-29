@@ -12,7 +12,7 @@ spec:
       image: alpine
       command:
         - wget
-        - https://saggyresourcepack.blob.core.windows.net/www/JARNAME
+        - JARURL
         - -P
         - /data/plugins
       securityContext:

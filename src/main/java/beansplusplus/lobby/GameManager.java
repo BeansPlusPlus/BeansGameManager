@@ -1,6 +1,5 @@
 package beansplusplus.lobby;
 
-import io.kubernetes.client.openapi.models.V1Pod;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.config.ServerInfo;
 
