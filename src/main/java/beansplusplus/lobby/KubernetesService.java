@@ -94,7 +94,7 @@ public class KubernetesService {
       //V1ConfigMap config = CONFIGMAP_TEMPLATE.metadata(CONFIGMAP_TEMPLATE.getMetadata().name(configMapName));
 
       System.out.println(Yaml.dump(pod));
-      System.out.println(Yaml.dump(config));
+      //System.out.println(Yaml.dump(config));
 
       //API.createNamespacedConfigMap(K8S_NAMESPACE, config, null, null, null, null);
       API.createNamespacedPod(K8S_NAMESPACE, pod, null, null, null, null);
