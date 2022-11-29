@@ -98,7 +98,11 @@ public class KubernetesService {
       }.getType());
       for (Watch.Response<V1Pod> event : watch) {
         V1Pod p = event.object;
-        if (p.getMetadata().getName().equals(podName) && p.getStatus().getContainerStatuses().get(0).getReady()) {
+        if (
+          p.getMetadata().getName().equals(podName)
+          && p.getStatus().getContainerStatuses() != null
+          && p.getStatus().getContainerStatuses().get(0).getReady()
+        ) {
           int port = p.getSpec().getContainers().get(0).getPorts().get(0).getContainerPort();
           return InetSocketAddress.createUnresolved(p.getStatus().getPodIP(), port);
         }
