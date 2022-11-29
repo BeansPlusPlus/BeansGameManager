@@ -12,8 +12,7 @@ import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Yaml;
 import okhttp3.Call;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.logging.Logger;
@@ -58,7 +57,7 @@ public class KubernetesService {
 
   private static V1Pod createPodTemplate() {
     try {
-      return (V1Pod) Yaml.load(new File("pod.yaml"));
+      return (V1Pod) Yaml.load(new InputStreamReader(KubernetesService.class.getResourceAsStream("/pod.yaml")));
     } catch (IOException e) {
       throw new Error(e);
     }
@@ -82,10 +81,14 @@ public class KubernetesService {
           .endMetadata()
           .withNewSpecLike(POD_TEMPLATE.getSpec())
           .endSpec()
+          .withKind(POD_TEMPLATE.getKind())
+          .withApiVersion(POD_TEMPLATE.getApiVersion())
           .build();
 
       List<String> initCommand = List.of(new String[]{"wget", jarUrl, "-P", "/data/plugins"});
       pod.getSpec().getInitContainers().get(0).setCommand(initCommand);
+
+      System.out.println(Yaml.dump(pod));
 
       API.createNamespacedPod(K8S_NAMESPACE, pod, null, null, null, null);
 
