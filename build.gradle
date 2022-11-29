@@ -16,5 +16,15 @@ dependencies {
     implementation 'io.kubernetes:client-java-api-fluent:15.0.1'
     // https://mvnrepository.com/artifact/io.kubernetes/client-java
     implementation 'io.kubernetes:client-java:15.0.1'
+}
 
+
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } // to create phat jar
+    } {
+        exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA' // to remove certs that cause "java.lang.SecurityException: Invalid signature file digest for Manifest main attributes"
+    }
 }

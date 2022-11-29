@@ -38,7 +38,7 @@ public class GameManager {
   public GameServer createServer(GameType type) {
     GameServer gameServer = new GameServer(type, generateId());
 
-    InetSocketAddress address = startServer();
+    InetSocketAddress address = startServer(gameServer.getId());
 
     registerServer(gameServer, address);
 
@@ -73,17 +73,8 @@ public class GameManager {
    *
    * @return
    */
-  private InetSocketAddress startServer() {
-    // TODO: api call to create server? - returns something to allow us to connect to it.
-
-    // at the moment this is just a dummy IP
-
-    System.out.println("Starting server...");
-
+  private InetSocketAddress startServer(String gameId) {
     try {
-
-      Yaml.addModelMap("v1", "Pod", V1Pod.class); // idk if this is needed
-
       if (podTemplate == null) {
         podTemplate = (V1Pod)Yaml.load(new File("pod.yaml"));
       }
@@ -93,19 +84,14 @@ public class GameManager {
 
       CoreV1Api api = new CoreV1Api();
 
-      podTemplate.setMetadata(new V1ObjectMetaBuilder().withName("beans-mini-game-1").build());
-
-      System.out.println(Yaml.dump(podTemplate));
+      podTemplate.setMetadata(new V1ObjectMetaBuilder().withName("beans-mini-game-" + gameId).build());
 
       V1Pod createdPod = api.createNamespacedPod("beans-mini-games", podTemplate, null, null, null, null);
 
       return InetSocketAddress.createUnresolved(createdPod.getStatus().getPodIP(), 25565);
-    } catch (IOException e) {
-      e.printStackTrace();
-    } catch (ApiException e) {
+    } catch (IOException | ApiException e) {
       e.printStackTrace();
     }
-    System.out.println("Retuning NULL");
     return null;
   }
 
