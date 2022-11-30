@@ -5,16 +5,16 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodBuilder;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Yaml;
 import okhttp3.Call;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class KubernetesService {
@@ -40,6 +40,8 @@ public class KubernetesService {
 
   private static final V1Pod POD_TEMPLATE = createPodTemplate();
 
+  private static final V1ConfigMap CONFIGMAP_TEMPLATE = createConfigMapTemplate();
+
   public static final ApiClient CLIENT = setupClient();
 
   private static final CoreV1Api API = new CoreV1Api();
@@ -57,7 +59,15 @@ public class KubernetesService {
 
   private static V1Pod createPodTemplate() {
     try {
-      return (V1Pod) Yaml.load(new File("pod.yaml"));
+      return (V1Pod) Yaml.load(new InputStreamReader(KubernetesService.class.getResourceAsStream("/pod.yaml")));
+    } catch (IOException e) {
+      throw new Error(e);
+    }
+  }
+
+  private static V1ConfigMap createConfigMapTemplate() {
+    try {
+      return (V1ConfigMap) Yaml.load(new InputStreamReader(KubernetesService.class.getResourceAsStream("/config.yaml")));
     } catch (IOException e) {
       throw new Error(e);
     }
@@ -72,18 +82,23 @@ public class KubernetesService {
   public InetSocketAddress start() throws KubernetesException {
     try {
       String podName = "beans-mini-game-" + server.getId();
+      String configMapName = podName;
 
-      String jarUrl = server.getType().getJarURL(); // TODO use this
+      String jarUrl = server.getType().getJarURL();
 
-      V1Pod pod = new V1PodBuilder()
-          .withNewMetadataLike(POD_TEMPLATE.getMetadata())
-          .withName("beans-mini-game-" + server.getId())
-          .endMetadata()
-          .withNewSpecLike(POD_TEMPLATE.getSpec())
-          .endSpec()
-          .build();
+      List<String> initCommand = List.of(new String[]{"wget", jarUrl, "-P", "/data/plugins"});
 
-      V1Pod createdPod = API.createNamespacedPod(K8S_NAMESPACE, pod, null, null, null, null);
+      V1Pod pod = POD_TEMPLATE.metadata(POD_TEMPLATE.getMetadata().name(podName));
+      pod.getSpec().getInitContainers().get(0).setCommand(initCommand);
+      pod.getSpec().getVolumes().get(1).getConfigMap().setName(configMapName);
+
+      V1ConfigMap config = CONFIGMAP_TEMPLATE.metadata(CONFIGMAP_TEMPLATE.getMetadata().name(configMapName));
+
+      System.out.println(Yaml.dump(pod));
+      System.out.println(Yaml.dump(config));
+
+      API.createNamespacedConfigMap(K8S_NAMESPACE, config, null, null, null, null);
+      API.createNamespacedPod(K8S_NAMESPACE, pod, null, null, null, null);
 
       // Wait for pod to start then return IP
       Call call = API.listNamespacedPodCall(K8S_NAMESPACE, null, null, null, null, null, null, null, null, 300, true, null);
@@ -91,8 +106,13 @@ public class KubernetesService {
       }.getType());
       for (Watch.Response<V1Pod> event : watch) {
         V1Pod p = event.object;
-        if (p.getMetadata().getName().equals(podName) && p.getStatus().getPhase().equals("Running")) {
-          return InetSocketAddress.createUnresolved(p.getStatus().getPodIP(), 25565);
+        if (
+          p.getMetadata().getName().equals(podName)
+          && p.getStatus().getContainerStatuses() != null
+          && p.getStatus().getContainerStatuses().get(0).getReady()
+        ) {
+          int port = p.getSpec().getContainers().get(0).getPorts().get(0).getContainerPort();
+          return InetSocketAddress.createUnresolved(p.getStatus().getPodIP(), port);
         }
       }
 

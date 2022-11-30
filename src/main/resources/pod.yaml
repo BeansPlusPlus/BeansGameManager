@@ -52,6 +52,8 @@ spec:
           value: "TRUE"
         - name: ONLINE_MODE  # needed for bungeecord
           value: "FALSE"
+        - name: COPY_CONFIG_DEST
+          value: /data
       readinessProbe:
         exec:
           command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
@@ -77,7 +79,12 @@ spec:
       volumeMounts:
         - name: plugins
           mountPath: /data/plugins
+        - name: config
+          mountPath: /config
   restartPolicy: OnFailure
   volumes:
     - name: plugins
       emptyDir: {}
+    - name: config
+      configMap:
+        name: configname
