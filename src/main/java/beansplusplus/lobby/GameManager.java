@@ -1,10 +1,15 @@
 package beansplusplus.lobby;
 
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.config.ServerInfo;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
+import net.md_5.bungee.api.plugin.Plugin;
 
 import java.net.InetSocketAddress;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class GameManager {
   private static final GameManager GAME_MANAGER = new GameManager();
@@ -17,13 +22,35 @@ public class GameManager {
 
   private final Map<String, GameServer> gameServers = new HashMap<>();
 
+  private Plugin plugin;
+
+  public void registerPlugin(Plugin plugin) {
+    this.plugin = plugin;
+  }
+
   /**
    * Create a new server by game type
    *
    * @param type
+   * @param creator
    * @return
    */
-  public GameServer createServer(GameType type) {
+  public void createServerAsync(GameType type, ProxiedPlayer creator) {
+    final String creatorUsername = creator.getName();
+
+    ProxyServer.getInstance().getScheduler().schedule(plugin, () -> {
+      createServer(type, creatorUsername);
+    }, 0, TimeUnit.SECONDS);
+  }
+
+  /**
+   * Create a new server by game type
+   *
+   * @param type
+   * @param creatorUsername
+   * @return
+   */
+  public void createServer(GameType type, String creatorUsername) {
     GameServer gameServer = new GameServer(type, generateId());
 
     KubernetesService service = new KubernetesService(gameServer);
@@ -33,13 +60,22 @@ public class GameManager {
 
       registerServer(gameServer, address);
 
-      return gameServer;
+      ProxiedPlayer player = ProxyServer.getInstance().getPlayer(creatorUsername);
+
+      if (player == null) return;
+
+      player.sendMessage(new ComponentBuilder("Server created successfully!").color(ChatColor.GREEN).create());
+      player.connect(gameServer.getServerInfo());
     } catch (KubernetesService.KubernetesException e) {
       ProxyServer.getInstance().getLogger().severe("Failed to start kubernetes pod. Printing stacktrace...");
 
       e.logError(ProxyServer.getInstance().getLogger());
 
-      return null;
+      ProxiedPlayer player = ProxyServer.getInstance().getPlayer(creatorUsername);
+
+      if (player == null) return;
+
+      player.sendMessage(new ComponentBuilder("Server failed to start. Please contact the server administrator.").color(ChatColor.DARK_RED).create());
     }
   }
 

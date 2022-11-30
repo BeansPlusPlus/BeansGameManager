@@ -72,13 +72,9 @@ public class GameCommand extends Command {
       return;
     }
 
-    GameServer server = gameManager.createServer(type);
+    gameManager.createServerAsync(type, p);
 
-    if (server == null) {
-      p.sendMessage(new ComponentBuilder("Server failed to start. Please contact the server owner...").color(ChatColor.DARK_RED).create());
-    } else {
-      p.connect(server.getServerInfo());
-    }
+    p.sendMessage(new ComponentBuilder("Creating server... Please wait...").color(ChatColor.AQUA).create());
   }
 
   private void join(ProxiedPlayer p, String[] args) {
