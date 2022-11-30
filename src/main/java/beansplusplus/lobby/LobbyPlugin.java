@@ -1,7 +1,11 @@
 package beansplusplus.lobby;
 
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.ServerPing;
 import net.md_5.bungee.api.plugin.Plugin;
+
+import java.net.Inet4Address;
+import java.util.concurrent.TimeUnit;
 
 public class LobbyPlugin extends Plugin {
   @Override
@@ -11,5 +15,7 @@ public class LobbyPlugin extends Plugin {
     GameManager.getInstance().registerPlugin(this);
 
     ProxyServer.getInstance().getPluginManager().registerCommand(this, new GameCommand());
+
+    ProxyServer.getInstance().getScheduler().schedule(this, () -> GameManager.getInstance().cleanServers(), 0, 5, TimeUnit.SECONDS);
   }
 }

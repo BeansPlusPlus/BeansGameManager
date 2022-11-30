@@ -2,11 +2,13 @@ package beansplusplus.lobby;
 
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.ServerPing;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -65,6 +67,7 @@ public class GameManager {
       if (player == null) return;
 
       player.sendMessage(new ComponentBuilder("Server created successfully!").color(ChatColor.GREEN).create());
+
       player.connect(gameServer.getServerInfo());
     } catch (KubernetesService.KubernetesException e) {
       ProxyServer.getInstance().getLogger().severe("Failed to start kubernetes pod. Printing stacktrace...");
@@ -76,6 +79,14 @@ public class GameManager {
       if (player == null) return;
 
       player.sendMessage(new ComponentBuilder("Server failed to start. Please contact the server administrator.").color(ChatColor.DARK_RED).create());
+    }
+  }
+
+  public void cleanServers() {
+    for (String gameId : gameServers.keySet()) {
+      getServer(gameId).getServerInfo().ping((ServerPing p, Throwable t) -> {
+        if (t != null) unregisterServer(gameId);
+      });
     }
   }
 
@@ -108,6 +119,10 @@ public class GameManager {
     ProxyServer.getInstance().getServers().put(gameServer.getId(), info); // register to proxy
 
     gameServers.put(gameServer.getId(), gameServer); // add to game manager
+  }
+
+  private void unregisterServer(String gameId) {
+    gameServers.remove(gameId);
   }
 
   /**
