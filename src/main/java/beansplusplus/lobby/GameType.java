@@ -3,7 +3,7 @@ package beansplusplus.lobby;
 public enum GameType {
   HUNTER_VS_SPEEDRUNNER("https://saggyresourcepack.blob.core.windows.net/www/SpeedrunnerVsHunter-1.0.jar");
 
-  private String jarURL;
+  private final String jarURL;
 
   GameType(String jarURL) {
     this.jarURL = jarURL;

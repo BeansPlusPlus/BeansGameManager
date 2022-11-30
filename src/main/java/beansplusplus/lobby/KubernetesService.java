@@ -73,7 +73,7 @@ public class KubernetesService {
     }
   }
 
-  private GameServer server;
+  private final GameServer server;
 
   public KubernetesService(GameServer server) {
     this.server = server;
