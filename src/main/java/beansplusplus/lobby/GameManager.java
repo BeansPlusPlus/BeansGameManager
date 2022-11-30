@@ -122,6 +122,7 @@ public class GameManager {
 
   private void unregisterServer(String gameId) {
     gameServers.remove(gameId);
+    ProxyServer.getInstance().getServers().remove(gameId);
   }
 
   /**
