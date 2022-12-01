@@ -67,6 +67,8 @@ public class GameManager {
 
       player.sendMessage(new ComponentBuilder("Server created successfully!").color(ChatColor.GREEN).create());
 
+      ProxyServer.getInstance().getConsole().sendMessage(new ComponentBuilder(creatorUsername + " started a game of " + gameServer.getType() + ". Join by running /game join " + gameServer.getId()).color(ChatColor.GREEN).create());
+
       player.connect(gameServer.getServerInfo());
     } catch (KubernetesService.KubernetesException e) {
       ProxyServer.getInstance().getLogger().severe("Failed to start kubernetes pod. Printing stacktrace...");
