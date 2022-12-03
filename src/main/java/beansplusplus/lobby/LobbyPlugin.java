@@ -13,6 +13,7 @@ public class LobbyPlugin extends Plugin {
     GameManager.getInstance().registerPlugin(this);
 
     ProxyServer.getInstance().getPluginManager().registerCommand(this, new GameCommand());
+    ProxyServer.getInstance().getPluginManager().registerCommand(this, new LobbyCommand());
 
     ProxyServer.getInstance().getScheduler().schedule(this, () -> GameManager.getInstance().cleanServers(), 0, 5, TimeUnit.SECONDS);
   }
