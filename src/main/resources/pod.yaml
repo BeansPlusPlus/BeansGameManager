@@ -50,6 +50,10 @@ spec:
           value: normal
         - name: ENABLE_AUTOSTOP
           value: "TRUE"
+        - name: AUTOSTOP_TIMEOUT_EST
+          value: 300
+        - name: AUTOSTOP_TIMEOUT_INIT
+          value: 300
         - name: ONLINE_MODE  # needed for bungeecord
           value: "FALSE"
         - name: COPY_CONFIG_DEST
