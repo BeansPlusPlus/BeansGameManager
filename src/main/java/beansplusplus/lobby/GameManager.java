@@ -65,9 +65,11 @@ public class GameManager {
 
       if (player == null) return;
 
-      player.sendMessage(new ComponentBuilder("Server created successfully!").color(ChatColor.GREEN).create());
+      player.sendMessage(new ComponentBuilder("Server created successfully! ID: " + gameServer.getId()).color(ChatColor.GREEN).create());
 
-      ProxyServer.getInstance().getConsole().sendMessage(new ComponentBuilder(creatorUsername + " started a game of " + gameServer.getType() + ". Join by running /game join " + gameServer.getId()).color(ChatColor.GREEN).create());
+      for (ProxiedPlayer lobbyPlayer : ProxyServer.getInstance().getServerInfo("lobby").getPlayers()) {
+        lobbyPlayer.sendMessage(new ComponentBuilder(creatorUsername + " started a game of " + gameServer.getType() + ". Join by running /game join " + gameServer.getId()).color(ChatColor.GREEN).create());
+      }
 
       player.connect(gameServer.getServerInfo());
     } catch (KubernetesService.KubernetesException e) {

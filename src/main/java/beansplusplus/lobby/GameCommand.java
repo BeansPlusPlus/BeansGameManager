@@ -49,6 +49,10 @@ public class GameCommand extends Command {
   }
 
   private void printServers(ProxiedPlayer p) {
+    if (gameManager.getAvailableGameIds().size() == 0) {
+      p.sendMessage(new ComponentBuilder("No servers currently...").color(ChatColor.RED).create());
+    }
+
     for (String serverId : gameManager.getAvailableGameIds()) {
       GameServer server = gameManager.getServer(serverId);
 
