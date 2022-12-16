@@ -23,7 +23,7 @@ spec:
     #    - ALL
     env:
     - name: PLUGINS
-      value: https://saggyresourcepack.blob.core.windows.net/www/BeansLobby-1.0.jar
+      value: https://saggyresourcepack.blob.core.windows.net/www/BeansGameManager-1.0.jar
     readinessProbe:
       exec:
         command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
