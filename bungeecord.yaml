@@ -107,7 +107,7 @@ metadata:
 apiVersion: v1
 kind: Service
 metadata:
-  name: beans-bungeecord
+  name: beans-bungeecord-test
   annotations:
     "mc-router.itzg.me/externalServerName": "test.beans.isaacirvine.me"
 spec:
@@ -116,4 +116,16 @@ spec:
   ports:
   - protocol: TCP
     port: 25565
-
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: beans-bungeecord
+  annotations:
+    "mc-router.itzg.me/externalServerName": "beans.isaacirvine.me"
+spec:
+  selector:
+    app: beans-bungeecord
+  ports:
+  - protocol: TCP
+    port: 25565
