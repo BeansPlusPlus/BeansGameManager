@@ -11,11 +11,7 @@ spec:
     - name: mod-download
       image: alpine
       command:
-        - wget
-        - https://saggyresourcepack.blob.core.windows.net/www/GameConfigPlugin-1.0-SNAPSHOT.jar
-        - JARURL
-        - -P
-        - /data/plugins
+        - REPLACE_PLEASE
       securityContext:
         allowPrivilegeEscalation: false
         runAsNonRoot: true

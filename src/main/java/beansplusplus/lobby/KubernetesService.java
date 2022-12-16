@@ -36,6 +36,8 @@ public class KubernetesService {
     }
   }
 
+  private static final String CONFIG_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/GameConfigPlugin-1.0-SNAPSHOT.jar";
+
   private static final String K8S_NAMESPACE = "beans-mini-games";
 
   private static final V1Pod POD_TEMPLATE = createPodTemplate();
@@ -86,16 +88,13 @@ public class KubernetesService {
 
       String jarUrl = server.getType().getJarURL();
 
-      List<String> initCommand = List.of(new String[]{"wget", jarUrl, "-P", "/data/plugins"});
+      List<String> initCommand = List.of(new String[]{"wget", CONFIG_PLUGIN_URL, jarUrl, "-P", "/data/plugins"});
 
       V1Pod pod = POD_TEMPLATE.metadata(POD_TEMPLATE.getMetadata().name(podName));
       pod.getSpec().getInitContainers().get(0).setCommand(initCommand);
       pod.getSpec().getVolumes().get(1).getConfigMap().setName(configMapName);
 
       V1ConfigMap config = CONFIGMAP_TEMPLATE.metadata(CONFIGMAP_TEMPLATE.getMetadata().name(configMapName));
-
-      System.out.println(Yaml.dump(pod));
-      System.out.println(Yaml.dump(config));
 
       API.createNamespacedConfigMap(K8S_NAMESPACE, config, null, null, null, null);
       API.createNamespacedPod(K8S_NAMESPACE, pod, null, null, null, null);
