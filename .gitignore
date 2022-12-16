@@ -4,6 +4,3 @@ out/
 lib/
 build/
 .gradle
-gradle/
-gradlew
-gradlew.bat
