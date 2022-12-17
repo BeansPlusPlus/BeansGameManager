@@ -6,8 +6,10 @@ import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.TabExecutor;
+import net.md_5.bungee.event.EventHandler;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class GameCommand extends Command implements TabExecutor {
@@ -32,20 +34,15 @@ public class GameCommand extends Command implements TabExecutor {
       join(p, args);
     } else if (args[0].equalsIgnoreCase("create")) {
       create(p, args);
-    } else if (args[0].equalsIgnoreCase("types")) {
-      printTypes(p);
     } else {
       printCommands(p);
     }
   }
 
-
-
   private void printCommands(ProxiedPlayer p) {
     p.sendMessage(new ComponentBuilder("/game list").color(ChatColor.RED).create());
     p.sendMessage(new ComponentBuilder("/game join <game id>").color(ChatColor.RED).create());
     p.sendMessage(new ComponentBuilder("/game create <game type>").color(ChatColor.RED).create());
-    p.sendMessage(new ComponentBuilder("/game types").color(ChatColor.RED).create());
   }
 
   private void printTypes(ProxiedPlayer p) {
@@ -110,10 +107,10 @@ public class GameCommand extends Command implements TabExecutor {
   @Override
   public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
     if (args.length == 1) {
-      return List.of("list", "join", "create", "types");
+      return List.of("list", "join", "create");
     }
 
-    if (args.length != 2) return new ArrayList<>();
+    if (args.length != 2) return Collections.emptyList();
 
     if (args[0].equalsIgnoreCase("create")) {
       return GameType.allGameStrings();
@@ -121,6 +118,6 @@ public class GameCommand extends Command implements TabExecutor {
       return gameManager.getAvailableGameIds();
     }
 
-    return new ArrayList<>();
+    return Collections.emptyList();
   }
 }

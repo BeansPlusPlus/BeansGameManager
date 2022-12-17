@@ -5,6 +5,11 @@ plugins {
 group 'beansplusplus.lobby'
 version '1.0'
 
+java {
+    sourceCompatibility = 16
+    targetCompatibility = 16
+}
+
 repositories {
     mavenCentral()
     maven { url 'https://oss.sonatype.org/content/repositories/snapshots' } // This lets gradle find the BungeeCord files online
