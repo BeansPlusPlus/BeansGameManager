@@ -5,8 +5,12 @@ import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
+import net.md_5.bungee.api.plugin.TabExecutor;
 
-public class GameCommand extends Command {
+import java.util.ArrayList;
+import java.util.List;
+
+public class GameCommand extends Command implements TabExecutor {
   private final GameManager gameManager = GameManager.getInstance();
 
   public GameCommand() {
@@ -34,6 +38,8 @@ public class GameCommand extends Command {
       printCommands(p);
     }
   }
+
+
 
   private void printCommands(ProxiedPlayer p) {
     p.sendMessage(new ComponentBuilder("/game list").color(ChatColor.RED).create());
@@ -99,5 +105,22 @@ public class GameCommand extends Command {
     }
 
     p.connect(server.getServerInfo());
+  }
+
+  @Override
+  public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
+    if (args.length == 1) {
+      return List.of("list", "join", "create", "types");
+    }
+
+    if (args.length != 2) return new ArrayList<>();
+
+    if (args[0].equalsIgnoreCase("create")) {
+      return GameType.allGameStrings();
+    } else if(args[0].equalsIgnoreCase("join")) {
+      return gameManager.getAvailableGameIds();
+    }
+
+    return new ArrayList<>();
   }
 }
