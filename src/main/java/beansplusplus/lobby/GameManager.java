@@ -88,7 +88,11 @@ public class GameManager {
   public void cleanServers() {
     for (String gameId : gameServers.keySet()) {
       getServer(gameId).getServerInfo().ping((ServerPing p, Throwable t) -> {
-        if (t != null) unregisterServer(gameId);
+        if (t == null) {
+          getServer(gameId).pingSuccess();
+        } else if (getServer(gameId).pingFail() >= 10) {
+          unregisterServer(gameId);
+        }
       });
     }
   }
