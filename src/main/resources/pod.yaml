@@ -55,6 +55,8 @@ spec:
           value: 1200
         - name: AUTOSTOP_TIMEOUT_INIT
           value: 1200
+        - name: VIEW_DISTANCE
+          value: 8
       readinessProbe:
         exec:
           command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
