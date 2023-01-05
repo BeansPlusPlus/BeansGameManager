@@ -52,9 +52,9 @@ spec:
         - name: COPY_CONFIG_DEST
           value: /data
         - name: AUTOSTOP_TIMEOUT_EST
-          value: 30
+          value: 300
         - name: AUTOSTOP_TIMEOUT_INIT
-          value: 60
+          value: 300
       readinessProbe:
         exec:
           command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
@@ -72,9 +72,9 @@ spec:
           cpu: "400m"
           ephemeral-storage: "2Gi"
         limits:
-          memory: "3Gi"
-          cpu: "3000m"
-          ephemeral-storage: "10Gi"
+          memory: "4Gi"
+          cpu: "3500m"
+          ephemeral-storage: "15Gi"
       ports:
         - containerPort: 25565
       volumeMounts:
