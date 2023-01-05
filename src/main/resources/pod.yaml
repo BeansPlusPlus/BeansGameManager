@@ -57,6 +57,8 @@ spec:
           value: 1200
         - name: VIEW_DISTANCE
           value: 8
+        - name: SYNC_CHUNK_WRITES
+          value: false
       readinessProbe:
         exec:
           command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
