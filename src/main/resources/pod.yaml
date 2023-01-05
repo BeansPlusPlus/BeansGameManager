@@ -52,9 +52,9 @@ spec:
         - name: COPY_CONFIG_DEST
           value: /data
         - name: AUTOSTOP_TIMEOUT_EST
-          value: 300
+          value: 1200
         - name: AUTOSTOP_TIMEOUT_INIT
-          value: 300
+          value: 1200
       readinessProbe:
         exec:
           command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
