@@ -11,6 +11,7 @@ import net.md_5.bungee.event.EventHandler;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 public class GameCommand extends Command implements TabExecutor {
   private final GameManager gameManager = GameManager.getInstance();
@@ -107,15 +108,15 @@ public class GameCommand extends Command implements TabExecutor {
   @Override
   public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
     if (args.length == 1) {
-      return List.of("list", "join", "create");
+      return List.of("list", "join", "create").stream().filter((s) -> s.startsWith(args[0].toLowerCase())).toList();
     }
 
     if (args.length != 2) return Collections.emptyList();
 
     if (args[0].equalsIgnoreCase("create")) {
-      return GameType.allGameStrings();
+      return GameType.allGameStrings().stream().filter((s) -> s.startsWith(args[1].toLowerCase())).toList();
     } else if(args[0].equalsIgnoreCase("join")) {
-      return gameManager.getAvailableGameIds();
+      return gameManager.getAvailableGameIds().stream().filter((s) -> s.startsWith(args[1].toLowerCase())).toList();
     }
 
     return Collections.emptyList();
