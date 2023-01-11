@@ -17,7 +17,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class KubernetesService {
+public class Kubernetes {
   public static class KubernetesException extends Exception {
     public KubernetesException(Exception e) {
       super(e);
@@ -61,7 +61,7 @@ public class KubernetesService {
 
   private static V1Pod createPodTemplate() {
     try {
-      return (V1Pod) Yaml.load(new InputStreamReader(KubernetesService.class.getResourceAsStream("/pod.yaml")));
+      return (V1Pod) Yaml.load(new InputStreamReader(Kubernetes.class.getResourceAsStream("/pod.yaml")));
     } catch (IOException e) {
       throw new Error(e);
     }
@@ -69,21 +69,22 @@ public class KubernetesService {
 
   private static V1ConfigMap createConfigMapTemplate() {
     try {
-      return (V1ConfigMap) Yaml.load(new InputStreamReader(KubernetesService.class.getResourceAsStream("/config.yaml")));
+      return (V1ConfigMap) Yaml.load(new InputStreamReader(Kubernetes.class.getResourceAsStream("/config.yaml")));
     } catch (IOException e) {
       throw new Error(e);
     }
   }
 
   private final GameServer server;
+  private final String podName;
 
-  public KubernetesService(GameServer server) {
+  public Kubernetes(GameServer server) {
     this.server = server;
+    podName = "beans-mini-game-" + server.getId();
   }
 
   public InetSocketAddress start() throws KubernetesException {
     try {
-      String podName = "beans-mini-game-" + server.getId();
       String configMapName = podName;
 
       String jarUrl = server.getType().getJarURL();
@@ -118,6 +119,17 @@ public class KubernetesService {
       throw new KubernetesException("Failed to start pod. Could not find in the list of running pods.");
     } catch (ApiException e) {
       throw new KubernetesException(e);
+    }
+  }
+
+  public boolean isFinished() {
+    try {
+      V1Pod pod = API.readNamespacedPod(podName, K8S_NAMESPACE, null);
+      return pod.getStatus().getPhase().equals("Succeeded");
+    } catch (ApiException e) {
+      e.printStackTrace();
+      // if there is an issue with connecting to the API server, it's safer to assume the game is still ongoing.
+      return false;
     }
   }
 }

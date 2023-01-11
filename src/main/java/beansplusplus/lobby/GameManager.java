@@ -54,12 +54,10 @@ public class GameManager {
   public void createServer(GameType type, String creatorUsername) {
     GameServer gameServer = new GameServer(type, generateId());
 
-    KubernetesService service = new KubernetesService(gameServer);
-
     try {
-      InetSocketAddress address = service.start();
+      gameServer.start();
 
-      registerServer(gameServer, address);
+      registerServer(gameServer);
 
       ProxiedPlayer player = ProxyServer.getInstance().getPlayer(creatorUsername);
 
@@ -72,7 +70,7 @@ public class GameManager {
       }
 
       player.connect(gameServer.getServerInfo());
-    } catch (KubernetesService.KubernetesException e) {
+    } catch (Kubernetes.KubernetesException e) {
       ProxyServer.getInstance().getLogger().severe("Failed to start kubernetes pod. Printing stacktrace...");
 
       e.logError(ProxyServer.getInstance().getLogger());
@@ -86,14 +84,10 @@ public class GameManager {
   }
 
   public void cleanServers() {
-    for (String gameId : gameServers.keySet()) {
-      getServer(gameId).getServerInfo().ping((ServerPing p, Throwable t) -> {
-        if (t == null) {
-          getServer(gameId).pingSuccess();
-        } else if (getServer(gameId).pingFail() >= 10) {
-          unregisterServer(gameId);
-        }
-      });
+    for (GameServer gameServer : gameServers.values()) {
+      if (gameServer.isFinished()) {
+        unregisterServer(gameServer.getId());
+      }
     }
   }
 
@@ -120,8 +114,8 @@ public class GameManager {
     return gameServers.keySet();
   }
 
-  private void registerServer(GameServer gameServer, InetSocketAddress address) {
-    ServerInfo info = ProxyServer.getInstance().constructServerInfo(gameServer.getId(), address, "BeansPlusPlus Server", false);
+  private void registerServer(GameServer gameServer) {
+    ServerInfo info = ProxyServer.getInstance().constructServerInfo(gameServer.getId(), gameServer.getAddress(), "BeansPlusPlus Server", false);
 
     ProxyServer.getInstance().getServers().put(gameServer.getId(), info); // register to proxy
 
@@ -134,7 +128,7 @@ public class GameManager {
   }
 
   /**
-   * Generate unique 5 digit number
+   * Generate unique 3 digit number
    *
    * @return
    */
@@ -142,7 +136,7 @@ public class GameManager {
     String id = null;
 
     while (id == null || gameServers.containsKey(id)) {
-      id = "" + (random.nextInt(90000) + 10000);
+      id = "" + (random.nextInt(900) + 100);
     }
 
     return id;
