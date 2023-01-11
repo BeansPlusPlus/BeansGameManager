@@ -105,8 +105,16 @@ public class Kubernetes {
 
       V1Pod pod = POD_TEMPLATE.metadata(POD_TEMPLATE.getMetadata().name(podName));
       pod.getSpec().getInitContainers().get(0).setCommand(initCommand);
-      pod.getSpec().getVolumes().get(1).getConfigMap().setName(configMapName);
-      pod.getSpec().getVolumes().get(2).getConfigMap().getItems().get(1).setKey(createPVC());
+      for (V1Volume volume : pod.getSpec().getVolumes()) {
+        switch (volume.getName()) {
+          case "config":
+            volume.getConfigMap().setName(configMapName);
+            break;
+          case "world":
+            volume.getPersistentVolumeClaim().claimName(createPVC());
+            break;
+        }
+      }
 
       V1ConfigMap config = CONFIGMAP_TEMPLATE.metadata(CONFIGMAP_TEMPLATE.getMetadata().name(configMapName));
 
