@@ -5,8 +5,7 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.models.V1ConfigMap;
-import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Yaml;
@@ -14,7 +13,9 @@ import okhttp3.Call;
 
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.logging.Logger;
 
 public class Kubernetes {
@@ -41,12 +42,15 @@ public class Kubernetes {
   private static final String K8S_NAMESPACE = "beans-mini-games";
 
   private static final V1Pod POD_TEMPLATE = createPodTemplate();
+  private static final V1PersistentVolumeClaim PVC_TEMPLATE = createPersistentVolumeClaimTemplate();
 
   private static final V1ConfigMap CONFIGMAP_TEMPLATE = createConfigMapTemplate();
 
   public static final ApiClient CLIENT = setupClient();
 
   private static final CoreV1Api API = new CoreV1Api();
+
+  private static Queue<String> worlds = new LinkedList<>();
 
   private static ApiClient setupClient() {
     try {
@@ -75,6 +79,14 @@ public class Kubernetes {
     }
   }
 
+  private static V1PersistentVolumeClaim createPersistentVolumeClaimTemplate() {
+    try {
+      return (V1PersistentVolumeClaim) Yaml.load(new InputStreamReader(Kubernetes.class.getResourceAsStream("/pvc.yaml")));
+    } catch (IOException e) {
+      throw new Error(e);
+    }
+  }
+
   private final GameServer server;
   private final String podName;
 
@@ -89,11 +101,12 @@ public class Kubernetes {
 
       String jarUrl = server.getType().getJarURL();
 
-      List<String> initCommand = List.of(new String[]{"wget", CONFIG_PLUGIN_URL, jarUrl, "-P", "/data/plugins"});
+      List<String> initCommand = List.of(new String[]{"wget", CONFIG_PLUGIN_URL, jarUrl, "-P", "/plugins"});
 
       V1Pod pod = POD_TEMPLATE.metadata(POD_TEMPLATE.getMetadata().name(podName));
       pod.getSpec().getInitContainers().get(0).setCommand(initCommand);
       pod.getSpec().getVolumes().get(1).getConfigMap().setName(configMapName);
+      pod.getSpec().getVolumes().get(2).getConfigMap().getItems().get(1).setKey(createPVC());
 
       V1ConfigMap config = CONFIGMAP_TEMPLATE.metadata(CONFIGMAP_TEMPLATE.getMetadata().name(configMapName));
 
@@ -131,5 +144,10 @@ public class Kubernetes {
       // if there is an issue with connecting to the API server, it's safer to assume the game is still ongoing.
       return false;
     }
+  }
+
+  private static String createPVC() {
+    V1PersistentVolumeClaim pvc = PVC_TEMPLATE.metadata(PVC_TEMPLATE.getMetadata().name("beans-world-" + System.currentTimeMillis()));
+    return pvc.getMetadata().getName();
   }
 }
