@@ -154,8 +154,9 @@ public class Kubernetes {
     }
   }
 
-  private static String createPVC() {
+  private static String createPVC() throws ApiException {
     V1PersistentVolumeClaim pvc = PVC_TEMPLATE.metadata(PVC_TEMPLATE.getMetadata().name("beans-world-" + System.currentTimeMillis()));
+    API.createNamespacedPersistentVolumeClaim(K8S_NAMESPACE, pvc, null, null, null, null);
     return pvc.getMetadata().getName();
   }
 }
