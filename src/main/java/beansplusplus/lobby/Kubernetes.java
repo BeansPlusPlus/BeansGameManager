@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.logging.Logger;
 
+// Remember: Don't forget to update the service account permissions if you're changing that this tries to access
+
 public class Kubernetes {
   public static class KubernetesException extends Exception {
     public KubernetesException(Exception e) {
@@ -140,7 +142,6 @@ public class Kubernetes {
       throw new KubernetesException("Failed to start pod. Could not find in the list of running pods.");
     } catch (ApiException e) {
       e.printStackTrace();
-      System.out.println("Error message: " + e.getMessage());
       throw new KubernetesException(e);
     }
   }
