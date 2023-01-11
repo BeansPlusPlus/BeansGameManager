@@ -140,7 +140,7 @@ public class Kubernetes {
       throw new KubernetesException("Failed to start pod. Could not find in the list of running pods.");
     } catch (ApiException e) {
       e.printStackTrace();
-      System.out.println("Error: " + e.getCause());
+      System.out.println("Error message: " + e.getMessage());
       throw new KubernetesException(e);
     }
   }
