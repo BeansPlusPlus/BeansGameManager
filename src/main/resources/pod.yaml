@@ -83,7 +83,7 @@ spec:
         - containerPort: 25565
       volumeMounts:
         - name: world
-          mountpath: /data
+          mountPath: /data
         - name: plugins
           mountPath: /plugins
         - name: config
