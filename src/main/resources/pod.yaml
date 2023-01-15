@@ -59,6 +59,12 @@ spec:
           value: 8
         - name: REMOVE_OLD_MODS
           value: "TRUE"
+        - name: SPAWN_PROTECTION
+          value: 0
+        - name: MEMORY
+          value: 2500M
+        - name: USE_AIKAR_FLAGS
+          value: "TRUE"
       readinessProbe:
         exec:
           command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
