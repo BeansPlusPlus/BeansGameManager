@@ -187,10 +187,10 @@ public class Kubernetes {
       }
     }
     V1Job job = new V1JobBuilder()
-            .editMetadata()
+            .withNewMetadata()
             .withName(podName)
             .endMetadata()
-            .editSpec()
+            .withNewSpec()
             .withTemplate(new V1PodTemplateSpec().spec(pod.getSpec()))
             .withParallelism(1)
             .withCompletions(1)
