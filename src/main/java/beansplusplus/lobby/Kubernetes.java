@@ -84,6 +84,7 @@ public class Kubernetes {
   }
 
   private final String gameName;
+  private final String id;
 
   // These get assigned when the kubernetes resource gets created
   private String gamePodName;
@@ -93,6 +94,7 @@ public class Kubernetes {
 
 
   public Kubernetes(String id, boolean skipPreGen) throws ApiException {
+    this.id = id;
     gameName = "beans-" + id;
     createConfigMap();
     createPVC();
@@ -198,5 +200,17 @@ public class Kubernetes {
             .endSpec()
             .build();
       BATCH_API.createNamespacedJob(K8S_NAMESPACE, job, null, null, null, null);
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public static void pausePreGen() {
+    // TODO
+  }
+
+  public static void resumePreGen() {
+    // TODO
   }
 }

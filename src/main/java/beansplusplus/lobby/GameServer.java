@@ -12,9 +12,9 @@ public class GameServer {
   private Kubernetes k8s;
   private InetSocketAddress address;
 
-  public GameServer(GameType type, String id, Kubernetes k8s) {
+  public GameServer(GameType type, Kubernetes k8s) {
     this.type = type;
-    this.id = id;
+    id = k8s.getId();
     this.k8s = k8s;
   }
 

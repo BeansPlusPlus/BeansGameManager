@@ -26,8 +26,26 @@ public class GameManager {
 
   private Plugin plugin;
 
+  private Queue<Kubernetes> preGenWorlds = new LinkedList<>();
+  private Kubernetes currentlyGeneratingWorld;
+
   public void registerPlugin(Plugin plugin) {
     this.plugin = plugin;
+  }
+
+  public void preGenWorld() {
+    // to be run on a schedule
+    try {
+      if (currentlyGeneratingWorld != null && currentlyGeneratingWorld.isPreGenFinished()) {
+        preGenWorlds.add(currentlyGeneratingWorld);
+        currentlyGeneratingWorld = null;
+      }
+      if (preGenWorlds.size() < 1) { // will be increased in the future
+        currentlyGeneratingWorld = new Kubernetes(generateId(), false);
+      }
+    } catch (ApiException e) {
+      e.printStackTrace();
+    }
   }
 
   /**
@@ -53,12 +71,16 @@ public class GameManager {
    * @return
    */
   public void createServer(GameType type, String creatorUsername) {
-
-
     try {
-      String id = generateId();
-      Kubernetes k8s = new Kubernetes(id, true);
-      GameServer gameServer = new GameServer(type, id, k8s);
+
+      Kubernetes k8s;
+      if (preGenWorlds.size() != 0) {
+        k8s = preGenWorlds.poll();
+      } else {
+        k8s = new Kubernetes(generateId(), true);
+      }
+
+      GameServer gameServer = new GameServer(type, k8s);
       gameServer.start();
 
       registerServer(gameServer);
