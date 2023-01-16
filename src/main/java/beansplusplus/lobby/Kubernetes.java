@@ -104,7 +104,7 @@ public class Kubernetes {
   public InetSocketAddress start(String jarUrl) throws KubernetesException {
     try {
       // Create game pod
-      gamePodName = gameName + "game";
+      gamePodName = gameName + "-game";
       List<String> initCommand = List.of(new String[]{"wget", CONFIG_PLUGIN_URL, jarUrl, "-P", "/plugins"});
       createMinecraftPod(gamePodName, initCommand);
 
@@ -115,7 +115,7 @@ public class Kubernetes {
       for (Watch.Response<V1Pod> event : watch) {
         V1Pod p = event.object;
         if (
-          p.getMetadata().getName().equals(gamePodName)
+          p.getMetadata().getName().startsWith(gamePodName) // temporary. Replace with gameJobName
           && p.getStatus().getContainerStatuses() != null
           && p.getStatus().getContainerStatuses().get(0).getReady()
         ) {
@@ -166,7 +166,7 @@ public class Kubernetes {
   }
 
   private void createPreGen() throws ApiException {
-    preGenPodName = gameName + "pregen";
+    preGenPodName = gameName + "-pregen";
     List<String> initCommand = List.of(new String[]{"wget", PREGEN_PLUGIN_URL, "-P", "/plugins"});
     createMinecraftPod(preGenPodName, initCommand);
   }
