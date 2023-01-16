@@ -40,7 +40,7 @@ public class GameManager {
         preGenWorlds.add(currentlyGeneratingWorld);
         currentlyGeneratingWorld = null;
       }
-      if (preGenWorlds.size() < 1) { // will be increased in the future
+      if (preGenWorlds.size() < 1 && currentlyGeneratingWorld == null) { // will be increased in the future
         currentlyGeneratingWorld = new Kubernetes(generateId(), false);
       }
     } catch (ApiException e) {

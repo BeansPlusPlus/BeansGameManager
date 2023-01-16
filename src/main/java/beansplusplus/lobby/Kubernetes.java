@@ -1,6 +1,7 @@
 package beansplusplus.lobby;
 
 import com.google.common.reflect.TypeToken;
+import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
@@ -190,13 +191,13 @@ public class Kubernetes {
     }
     V1Job job = new V1JobBuilder()
             .withNewMetadata()
-            .withName(podName)
+              .withName(podName)
             .endMetadata()
             .withNewSpec()
-            .withTemplate(new V1PodTemplateSpec().spec(pod.getSpec()))
-            .withParallelism(1)
-            .withCompletions(1)
-            .withTtlSecondsAfterFinished(8000)
+              .withTemplate(new V1PodTemplateSpec().spec(pod.getSpec()))
+              .withParallelism(1)
+              .withCompletions(1)
+              .withTtlSecondsAfterFinished(8000)
             .endSpec()
             .build();
       BATCH_API.createNamespacedJob(K8S_NAMESPACE, job, null, null, null, null);
@@ -206,11 +207,15 @@ public class Kubernetes {
     return id;
   }
 
-  public static void pausePreGen() {
-    // TODO
+  public void pausePreGen() throws ApiException {
+    V1Job job = BATCH_API.readNamespacedJob(preGenPodName, K8S_NAMESPACE, null);
+    job.getSpec().suspend(true);
+    BATCH_API.patchNamespacedJob(preGenPodName, K8S_NAMESPACE, new V1Patch(job.toString()), null, null, null, null, null);
   }
 
-  public static void resumePreGen() {
-    // TODO
+  public void resumePreGen() throws ApiException {
+    V1Job job = BATCH_API.readNamespacedJob(preGenPodName, K8S_NAMESPACE, null);
+    job.getSpec().suspend(false);
+    BATCH_API.patchNamespacedJob(preGenPodName, K8S_NAMESPACE, new V1Patch(job.toString()), null, null, null, null, null);
   }
 }
