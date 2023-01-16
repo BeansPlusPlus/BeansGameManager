@@ -41,6 +41,7 @@ public class Kubernetes {
 
   private static final String CONFIG_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/GameConfigPlugin-1.0-SNAPSHOT.jar";
   private static final String PREGEN_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/PreGen-1.0.jar";
+  private static final String CHUNKY_PLUGIN_URL = "https://www.spigotmc.org/resources/chunky.81534/download?version=478364";
   private static final String K8S_NAMESPACE = "beans-mini-games";
   private static final V1Pod POD_TEMPLATE = createPodTemplate();
   private static final V1PersistentVolumeClaim PVC_TEMPLATE = createPersistentVolumeClaimTemplate();
@@ -170,7 +171,7 @@ public class Kubernetes {
 
   private void createPreGen() throws ApiException {
     preGenPodName = gameName + "-pregen";
-    List<String> initCommand = List.of(new String[]{"wget", PREGEN_PLUGIN_URL, "-P", "/plugins"});
+    List<String> initCommand = List.of(new String[]{"wget", PREGEN_PLUGIN_URL, CHUNKY_PLUGIN_URL, "-P", "/plugins"});
     createMinecraftPod(preGenPodName, initCommand);
   }
 
