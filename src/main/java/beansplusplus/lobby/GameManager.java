@@ -1,5 +1,6 @@
 package beansplusplus.lobby;
 
+import io.kubernetes.client.openapi.ApiException;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.ServerPing;
@@ -52,9 +53,12 @@ public class GameManager {
    * @return
    */
   public void createServer(GameType type, String creatorUsername) {
-    GameServer gameServer = new GameServer(type, generateId());
+
 
     try {
+      String id = generateId();
+      Kubernetes k8s = new Kubernetes(id, true);
+      GameServer gameServer = new GameServer(type, id, k8s);
       gameServer.start();
 
       registerServer(gameServer);
@@ -80,6 +84,8 @@ public class GameManager {
       if (player == null) return;
 
       player.sendMessage(new ComponentBuilder("Server failed to start. Please contact the server administrator.").color(ChatColor.DARK_RED).create());
+    } catch (ApiException e) {
+      e.printStackTrace();
     }
   }
 

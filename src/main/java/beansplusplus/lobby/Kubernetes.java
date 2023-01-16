@@ -4,6 +4,7 @@ import com.google.common.reflect.TypeToken;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
@@ -13,9 +14,7 @@ import okhttp3.Call;
 
 import java.io.*;
 import java.net.InetSocketAddress;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.logging.Logger;
 
 // Remember: Don't forget to update the service account permissions if you're changing that this tries to access
@@ -40,19 +39,14 @@ public class Kubernetes {
   }
 
   private static final String CONFIG_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/GameConfigPlugin-1.0-SNAPSHOT.jar";
-
+  private static final String PREGEN_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/PreGen-1.0.jar";
   private static final String K8S_NAMESPACE = "beans-mini-games";
-
   private static final V1Pod POD_TEMPLATE = createPodTemplate();
   private static final V1PersistentVolumeClaim PVC_TEMPLATE = createPersistentVolumeClaimTemplate();
-
   private static final V1ConfigMap CONFIGMAP_TEMPLATE = createConfigMapTemplate();
-
   public static final ApiClient CLIENT = setupClient();
-
   private static final CoreV1Api API = new CoreV1Api();
-
-  private static Queue<String> worlds = new LinkedList<>();
+  private static final BatchV1Api BATCH_API = new BatchV1Api();
 
   private static ApiClient setupClient() {
     try {
@@ -89,39 +83,30 @@ public class Kubernetes {
     }
   }
 
-  private final GameServer server;
-  private final String podName;
+  private final String gameName;
 
-  public Kubernetes(GameServer server) {
-    this.server = server;
-    podName = "beans-mini-game-" + server.getId();
+  // These get assigned when the kubernetes resource gets created
+  private String gamePodName;
+  private String preGenPodName;
+  private String configMapName;
+  private String pvcName;
+
+
+  public Kubernetes(String id, boolean skipPreGen) throws ApiException {
+    gameName = "beans-" + id;
+    createConfigMap();
+    createPVC();
+    if (!skipPreGen) {
+      createPreGen();
+    }
   }
 
-  public InetSocketAddress start() throws KubernetesException {
+  public InetSocketAddress start(String jarUrl) throws KubernetesException {
     try {
-      String configMapName = podName;
-
-      String jarUrl = server.getType().getJarURL();
-
+      // Create game pod
+      gamePodName = gameName + "game";
       List<String> initCommand = List.of(new String[]{"wget", CONFIG_PLUGIN_URL, jarUrl, "-P", "/plugins"});
-
-      V1Pod pod = POD_TEMPLATE.metadata(POD_TEMPLATE.getMetadata().name(podName));
-      pod.getSpec().getInitContainers().get(0).setCommand(initCommand);
-      for (V1Volume volume : pod.getSpec().getVolumes()) {
-        switch (volume.getName()) {
-          case "config":
-            volume.getConfigMap().setName(configMapName);
-            break;
-          case "world":
-            volume.getPersistentVolumeClaim().claimName(createPVC());
-            break;
-        }
-      }
-
-      V1ConfigMap config = CONFIGMAP_TEMPLATE.metadata(CONFIGMAP_TEMPLATE.getMetadata().name(configMapName));
-
-      API.createNamespacedConfigMap(K8S_NAMESPACE, config, null, null, null, null);
-      API.createNamespacedPod(K8S_NAMESPACE, pod, null, null, null, null);
+      createMinecraftPod(gamePodName, initCommand);
 
       // Wait for pod to start then return IP
       Call call = API.listNamespacedPodCall(K8S_NAMESPACE, null, null, null, null, null, null, null, null, 300, true, null);
@@ -130,7 +115,7 @@ public class Kubernetes {
       for (Watch.Response<V1Pod> event : watch) {
         V1Pod p = event.object;
         if (
-          p.getMetadata().getName().equals(podName)
+          p.getMetadata().getName().equals(gamePodName)
           && p.getStatus().getContainerStatuses() != null
           && p.getStatus().getContainerStatuses().get(0).getReady()
         ) {
@@ -146,9 +131,12 @@ public class Kubernetes {
     }
   }
 
-  public boolean isFinished() {
+  public boolean isGameFinished() {
+    if (gamePodName == null) {
+      return false;
+    }
     try {
-      V1Pod pod = API.readNamespacedPod(podName, K8S_NAMESPACE, null);
+      V1Pod pod = API.readNamespacedPod(gamePodName, K8S_NAMESPACE, null);
       return pod.getStatus().getPhase().equals("Succeeded");
     } catch (ApiException e) {
       e.printStackTrace();
@@ -157,9 +145,58 @@ public class Kubernetes {
     }
   }
 
-  private static String createPVC() throws ApiException {
-    V1PersistentVolumeClaim pvc = PVC_TEMPLATE.metadata(PVC_TEMPLATE.getMetadata().name("beans-world-" + System.currentTimeMillis()));
+  public boolean isPreGenFinished() {
+    if (preGenPodName == null) {
+      return true; // means it was skipped
+    }
+    try {
+      V1Pod pod = API.readNamespacedPod(preGenPodName, K8S_NAMESPACE, null);
+      return pod.getStatus().getPhase().equals("Succeeded");
+    } catch (ApiException e) {
+      e.printStackTrace();
+      return false;
+    }
+  }
+
+  private String createPVC() throws ApiException {
+    pvcName = gameName + (System.currentTimeMillis() / 1000);
+    V1PersistentVolumeClaim pvc = PVC_TEMPLATE.metadata(PVC_TEMPLATE.getMetadata().name(pvcName));
     API.createNamespacedPersistentVolumeClaim(K8S_NAMESPACE, PVC_TEMPLATE, null, null, null, null);
     return pvc.getMetadata().getName();
+  }
+
+  private void createPreGen() throws ApiException {
+    preGenPodName = gameName + "pregen";
+    List<String> initCommand = List.of(new String[]{"wget", PREGEN_PLUGIN_URL, "-P", "/plugins"});
+    createMinecraftPod(preGenPodName, initCommand);
+  }
+
+  private void createConfigMap() throws ApiException {
+    configMapName = gameName;
+    V1ConfigMap config = CONFIGMAP_TEMPLATE.metadata(CONFIGMAP_TEMPLATE.getMetadata().name(configMapName));
+    API.createNamespacedConfigMap(K8S_NAMESPACE, config, null, null, null, null);
+  }
+
+  private void createMinecraftPod(String podName, List<String> initCommand) throws ApiException {
+    V1Pod pod = POD_TEMPLATE.metadata(POD_TEMPLATE.getMetadata().name(podName));
+    pod.getSpec().getInitContainers().get(0).setCommand(initCommand);
+    for (V1Volume volume : pod.getSpec().getVolumes()) {
+      switch (volume.getName()) {
+        case "config" -> volume.getConfigMap().setName(configMapName);
+        case "world" -> volume.getPersistentVolumeClaim().claimName(pvcName);
+      }
+    }
+    V1Job job = new V1JobBuilder()
+            .editMetadata()
+            .withName(podName)
+            .endMetadata()
+            .editSpec()
+            .withTemplate(new V1PodTemplateSpec().spec(pod.getSpec()))
+            .withParallelism(1)
+            .withCompletions(1)
+            .withTtlSecondsAfterFinished(8000)
+            .endSpec()
+            .build();
+      BATCH_API.createNamespacedJob(K8S_NAMESPACE, job, null, null, null, null);
   }
 }
