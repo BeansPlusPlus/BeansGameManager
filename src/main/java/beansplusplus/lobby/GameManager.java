@@ -41,14 +41,14 @@ public class GameManager {
         }
         return;
       }
+      if (currentlyGeneratingWorld.isPreGenPaused() && gameServers.size() == 0) {
+        System.out.println("No games running. Un-pausing world pre-generation");
+        currentlyGeneratingWorld.resumePreGen();
+      }
       if (currentlyGeneratingWorld.isPreGenFinished()) {
         System.out.println("World pre-generation finished");
         preGenWorlds.add(currentlyGeneratingWorld);
         currentlyGeneratingWorld = null;
-      }
-      if (currentlyGeneratingWorld.isPreGenPaused() && gameServers.size() == 0) {
-        System.out.println("No games running. Un-pausing world pre-generation");
-        currentlyGeneratingWorld.resumePreGen();
       }
     } catch (ApiException e) {
       e.printStackTrace();

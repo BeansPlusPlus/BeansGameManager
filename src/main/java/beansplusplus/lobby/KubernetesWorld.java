@@ -135,7 +135,7 @@ public class KubernetesWorld {
     }
     try {
       V1Job job = BATCH_API.readNamespacedJob(gameJobName, K8S_NAMESPACE, null);
-      return job.getStatus().getSucceeded() == 1;
+      return job.getStatus().getSucceeded() != null && job.getStatus().getSucceeded() == 1;
     } catch (ApiException e) {
       e.printStackTrace();
       // if there is an issue with connecting to the API server, it's safer to assume the game is still ongoing.
@@ -149,7 +149,7 @@ public class KubernetesWorld {
     }
     try {
       V1Job job = BATCH_API.readNamespacedJob(preGenJobName, K8S_NAMESPACE, null);
-      return job.getStatus().getReady() == 1;
+      return job.getStatus().getSucceeded() != null && job.getStatus().getSucceeded() == 1;
     } catch (ApiException e) {
       e.printStackTrace();
       return false;
