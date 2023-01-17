@@ -93,10 +93,12 @@ public class GameManager {
       }
 
       // stop pregen
+      /**
       if (currentlyGeneratingWorld != null) {
         System.out.println("New game starting. Pausing world pre-generation");
         currentlyGeneratingWorld.pausePreGen();
       }
+      */
 
       // start game
       GameServer gameServer = new GameServer(type, k8s);

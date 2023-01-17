@@ -156,7 +156,7 @@ public class KubernetesWorld {
   }
 
   private String createPVC() throws ApiException {
-    pvcName = gameName + (System.currentTimeMillis() / 1000);
+    pvcName = gameName + "-" + (System.currentTimeMillis() / 1000);
     V1PersistentVolumeClaim pvc = PVC_TEMPLATE.metadata(PVC_TEMPLATE.getMetadata().name(pvcName));
     pvc.getMetadata().putLabelsItem("beans-mini-game", "true");
     CORE_API.createNamespacedPersistentVolumeClaim(K8S_NAMESPACE, PVC_TEMPLATE, null, null, null, null);
