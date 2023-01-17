@@ -256,7 +256,7 @@ public class KubernetesWorld {
     try {
       V1PersistentVolumeClaimList claims = CORE_API.listNamespacedPersistentVolumeClaim(K8S_NAMESPACE, null, null, null, null, "beans-mini-game=true", null, null, null, null, null);
       for (V1PersistentVolumeClaim claim : claims.getItems()) {
-        if (OffsetDateTime.now().minus(Period.ofDays(7)).isAfter(claim.getMetadata().getCreationTimestamp())) {
+        if (OffsetDateTime.now().minus(Period.ofDays(7)).isAfter(claim.getMetadata().getCreationTimestamp())) { // TODO: This tracks from pre-gen time not game time
           System.out.println("PVC " + claim.getMetadata().getName() + " is over 7 days old. Deleting PVC");
           CORE_API.deleteNamespacedPersistentVolumeClaim(claim.getMetadata().getName(), K8S_NAMESPACE, null, null, null, null, null, null);
         }
