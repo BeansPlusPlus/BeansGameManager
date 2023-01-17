@@ -148,7 +148,7 @@ public class KubernetesWorld {
     }
     try {
       V1Job job = BATCH_API.readNamespacedJob(preGenJobName, K8S_NAMESPACE, null);
-      return job.getStatus().getSucceeded() == 1;
+      return job.getStatus().getReady() == 1;
     } catch (ApiException e) {
       e.printStackTrace();
       return false;
