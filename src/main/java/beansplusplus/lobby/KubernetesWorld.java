@@ -9,6 +9,7 @@ import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
+import io.kubernetes.client.util.PatchUtils;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Yaml;
 import okhttp3.Call;
@@ -44,7 +45,7 @@ public class KubernetesWorld {
 
   private static final String CONFIG_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/GameConfigPlugin-1.0-SNAPSHOT.jar";
   private static final String PREGEN_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/PreGen-1.0.jar";
-  private static final String CHUNKY_PLUGIN_URL = "https://www.spigotmc.org/resources/chunky.81534/download?version=478364";
+  private static final String CHUNKY_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/Chunky-1.3.52.jar"; // can't use the spigot website :/
   private static final String K8S_NAMESPACE = "beans-mini-games";
   private static final V1Pod POD_TEMPLATE = createPodTemplate();
   private static final V1PersistentVolumeClaim PVC_TEMPLATE = createPersistentVolumeClaimTemplate();
@@ -208,14 +209,42 @@ public class KubernetesWorld {
   public void pausePreGen() throws ApiException {
     V1Job job = BATCH_API.readNamespacedJob(preGenJobName, K8S_NAMESPACE, null);
     job.getSpec().suspend(true);
-    BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch(Yaml.dump(job)), null, null, "example-field-manager", null, null);
+    //BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch(Yaml.dump(job)), null, null, "example-field-manager", null, null);
+    PatchUtils.patch(
+            V1Job.class,
+            () -> BATCH_API.patchNamespacedJobCall(
+                    preGenJobName,
+                    K8S_NAMESPACE,
+                    new V1Patch(Yaml.dump(job)),
+                    null,
+                    null,
+                    "example-field-manager", // field-manager is required for server-side apply
+                    null,
+                    true,
+                    null),
+            V1Patch.PATCH_FORMAT_APPLY_YAML,
+            BATCH_API.getApiClient());
     preGenPaused = true;
   }
 
   public void resumePreGen() throws ApiException {
     V1Job job = BATCH_API.readNamespacedJob(preGenJobName, K8S_NAMESPACE, null);
     job.getSpec().suspend(false);
-    BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch(Yaml.dump(job)), null, null, "example-field-manager", null, null);
+    //BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch(Yaml.dump(job)), null, null, "example-field-manager", null, null);
+    PatchUtils.patch(
+            V1Job.class,
+            () -> BATCH_API.patchNamespacedJobCall(
+                    preGenJobName,
+                    K8S_NAMESPACE,
+                    new V1Patch(Yaml.dump(job)),
+                    null,
+                    null,
+                    "example-field-manager", // field-manager is required for server-side apply
+                    null,
+                    true,
+                    null),
+            V1Patch.PATCH_FORMAT_APPLY_YAML,
+            BATCH_API.getApiClient());
     preGenPaused = false;
   }
 
