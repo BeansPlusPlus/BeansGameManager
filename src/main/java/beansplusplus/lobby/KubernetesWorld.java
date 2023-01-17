@@ -46,12 +46,12 @@ public class KubernetesWorld {
   private static final String PREGEN_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/PreGen-1.0.jar";
   private static final String CHUNKY_PLUGIN_URL = "https://www.spigotmc.org/resources/chunky.81534/download?version=478364";
   private static final String K8S_NAMESPACE = "beans-mini-games";
-  private static final String CONFIG_MAP_NAME = setupConfigMap();
   private static final V1Pod POD_TEMPLATE = createPodTemplate();
   private static final V1PersistentVolumeClaim PVC_TEMPLATE = createPersistentVolumeClaimTemplate();
   public static final ApiClient CLIENT = setupClient();
   private static final CoreV1Api CORE_API = new CoreV1Api();
   private static final BatchV1Api BATCH_API = new BatchV1Api();
+  private static boolean createdConfigMap = false;
 
   private static ApiClient setupClient() {
     try {
@@ -60,17 +60,6 @@ public class KubernetesWorld {
 
       return client;
     } catch (IOException e) {
-      throw new Error(e);
-    }
-  }
-
-  private static String setupConfigMap() {
-    try {
-      V1ConfigMap config = (V1ConfigMap) Yaml.load(new InputStreamReader(KubernetesWorld.class.getResourceAsStream("/config.yaml")));
-      CORE_API.createNamespacedConfigMap(K8S_NAMESPACE, config, null, null, null, null);
-
-      return config.getMetadata().getName();
-    } catch (ApiException | IOException e) {
       throw new Error(e);
     }
   }
@@ -105,6 +94,7 @@ public class KubernetesWorld {
     this.id = id;
     gameName = "beans-" + id;
     createPVC();
+
     if (!skipPreGen) {
       createPreGen();
     }
@@ -180,21 +170,34 @@ public class KubernetesWorld {
   }
 
   private void createMinecraftPod(String podName, List<String> pluginURLs) throws ApiException {
+    // Deploy config map if it doesn't already exist
+    if (!createdConfigMap) {
+      try {
+        V1ConfigMap config = (V1ConfigMap) Yaml.load(new InputStreamReader(KubernetesWorld.class.getResourceAsStream("/config.yaml")));
+        CORE_API.createNamespacedConfigMap(K8S_NAMESPACE, config, null, null, null, null);
+        createdConfigMap = true;
+      } catch (IOException e) {
+        e.printStackTrace();
+        return;
+      }
+    }
+
+    // Get copy of pod
     V1Pod pod = POD_TEMPLATE.metadata(POD_TEMPLATE.getMetadata().name(podName));
 
-    // init command
+    // Set Init command
     List<String> initCommand = new ArrayList<>(List.of(new String[]{"wget", "-P", "/plugins"}));
     initCommand.addAll(1, pluginURLs);
     pod.getSpec().getInitContainers().get(0).setCommand(initCommand);
 
-    // volumes
+    // Set volumes
     for (V1Volume volume : pod.getSpec().getVolumes()) {
       switch (volume.getName()) {
         case "world" -> volume.getPersistentVolumeClaim().claimName(pvcName);
       }
     }
 
-    // encapsulate in job
+    // Encapsulate in job
     V1Job job = new V1JobBuilder()
             .withNewMetadata()
               .withName(podName)
@@ -206,7 +209,9 @@ public class KubernetesWorld {
               .withTtlSecondsAfterFinished(8000)
             .endSpec()
             .build();
-      BATCH_API.createNamespacedJob(K8S_NAMESPACE, job, null, null, null, null);
+
+    // Deploy job
+    BATCH_API.createNamespacedJob(K8S_NAMESPACE, job, null, null, null, null);
   }
 
   public String getId() {
