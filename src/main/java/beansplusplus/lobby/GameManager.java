@@ -3,13 +3,11 @@ package beansplusplus.lobby;
 import io.kubernetes.client.openapi.ApiException;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
-import net.md_5.bungee.api.ServerPing;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 
-import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -26,8 +24,8 @@ public class GameManager {
 
   private Plugin plugin;
 
-  private Queue<Kubernetes> preGenWorlds = new LinkedList<>();
-  private Kubernetes currentlyGeneratingWorld;
+  private Queue<KubernetesWorld> preGenWorlds = new LinkedList<>();
+  private KubernetesWorld currentlyGeneratingWorld;
 
   public void registerPlugin(Plugin plugin) {
     this.plugin = plugin;
@@ -36,12 +34,18 @@ public class GameManager {
   public void preGenWorld() {
     // to be run on a schedule
     try {
-      if (currentlyGeneratingWorld != null && currentlyGeneratingWorld.isPreGenFinished()) {
+      if (currentlyGeneratingWorld == null) {
+        if (preGenWorlds.size() < 1 && gameServers.size() == 0) {
+          currentlyGeneratingWorld = new KubernetesWorld(generateId(), false);
+        }
+        return;
+      }
+      if (currentlyGeneratingWorld.isPreGenFinished()) {
         preGenWorlds.add(currentlyGeneratingWorld);
         currentlyGeneratingWorld = null;
       }
-      if (preGenWorlds.size() < 1 && currentlyGeneratingWorld == null) { // will be increased in the future
-        currentlyGeneratingWorld = new Kubernetes(generateId(), false);
+      if (currentlyGeneratingWorld.isPreGenPaused() && gameServers.size() == 0) {
+        currentlyGeneratingWorld.resumePreGen();
       }
     } catch (ApiException e) {
       e.printStackTrace();
@@ -72,31 +76,39 @@ public class GameManager {
    */
   public void createServer(GameType type, String creatorUsername) {
     try {
+      // get player
+      ProxiedPlayer player = ProxyServer.getInstance().getPlayer(creatorUsername);
+      if (player == null) return;
 
-      Kubernetes k8s;
+      // get world
+      KubernetesWorld k8s;
       if (preGenWorlds.size() != 0) {
         k8s = preGenWorlds.poll();
       } else {
-        k8s = new Kubernetes(generateId(), true);
+        player.sendMessage(new ComponentBuilder("Pre-generated world not available. Creating new world").color(ChatColor.RED).create());
+        k8s = new KubernetesWorld(generateId(), true);
       }
 
+      // stop pregen
+      if (currentlyGeneratingWorld != null) {
+        currentlyGeneratingWorld.pausePreGen();
+      }
+
+      // start game
       GameServer gameServer = new GameServer(type, k8s);
       gameServer.start();
-
       registerServer(gameServer);
 
-      ProxiedPlayer player = ProxyServer.getInstance().getPlayer(creatorUsername);
-
-      if (player == null) return;
-
+      // tell players about game
       player.sendMessage(new ComponentBuilder("Server created successfully! ID: " + gameServer.getId()).color(ChatColor.GREEN).create());
-
       for (ProxiedPlayer lobbyPlayer : ProxyServer.getInstance().getServerInfo("lobby").getPlayers()) {
         lobbyPlayer.sendMessage(new ComponentBuilder(creatorUsername + " started a game of " + gameServer.getType().string() + ". Join by running /game join " + gameServer.getId()).color(ChatColor.GREEN).create());
       }
 
+      // move game creator to game
       player.connect(gameServer.getServerInfo());
-    } catch (Kubernetes.KubernetesException e) {
+
+    } catch (KubernetesWorld.KubernetesException e) {
       ProxyServer.getInstance().getLogger().severe("Failed to start kubernetes pod. Printing stacktrace...");
 
       e.logError(ProxyServer.getInstance().getLogger());

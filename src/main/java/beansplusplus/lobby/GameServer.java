@@ -1,6 +1,5 @@
 package beansplusplus.lobby;
 
-import io.kubernetes.client.openapi.ApiException;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.config.ServerInfo;
 
@@ -9,10 +8,10 @@ import java.net.InetSocketAddress;
 public class GameServer {
   private final GameType type;
   private final String id;
-  private Kubernetes k8s;
+  private KubernetesWorld k8s;
   private InetSocketAddress address;
 
-  public GameServer(GameType type, Kubernetes k8s) {
+  public GameServer(GameType type, KubernetesWorld k8s) {
     this.type = type;
     id = k8s.getId();
     this.k8s = k8s;
@@ -26,7 +25,7 @@ public class GameServer {
     return id;
   }
 
-  public void start() throws Kubernetes.KubernetesException {
+  public void start() throws KubernetesWorld.KubernetesException {
     address = k8s.start(type.getJarURL());
   }
 

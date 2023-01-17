@@ -101,7 +101,7 @@ spec:
       emptyDir: {}
     - name: config
       configMap:
-        name: TOBEADDED
+        name: beans-game
     - name: world
       persistentVolumeClaim:
         claimName: TOBEADDED
