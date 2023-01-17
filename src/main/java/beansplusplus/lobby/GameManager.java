@@ -36,15 +36,18 @@ public class GameManager {
     try {
       if (currentlyGeneratingWorld == null) {
         if (preGenWorlds.size() < 1 && gameServers.size() == 0) {
+          System.out.println("No world currently generating, queue less and desired, no game running. Starting world pre-generation");
           currentlyGeneratingWorld = new KubernetesWorld(generateId(), false);
         }
         return;
       }
       if (currentlyGeneratingWorld.isPreGenFinished()) {
+        System.out.println("World pre-generation finished");
         preGenWorlds.add(currentlyGeneratingWorld);
         currentlyGeneratingWorld = null;
       }
       if (currentlyGeneratingWorld.isPreGenPaused() && gameServers.size() == 0) {
+        System.out.println("No games running. Un-pausing world pre-generation");
         currentlyGeneratingWorld.resumePreGen();
       }
     } catch (ApiException e) {
@@ -91,6 +94,7 @@ public class GameManager {
 
       // stop pregen
       if (currentlyGeneratingWorld != null) {
+        System.out.println("New game starting. Pausing world pre-generation");
         currentlyGeneratingWorld.pausePreGen();
       }
 
