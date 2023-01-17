@@ -35,7 +35,7 @@ public class GameManager {
     // to be run on a schedule
     try {
       if (currentlyGeneratingWorld == null) {
-        if (preGenWorlds.size() < 1 && gameServers.size() == 0) {
+        if (preGenWorlds.size() < 5 && gameServers.size() == 0) {
           System.out.println("No world currently generating, queue less and desired, no game running. Starting world pre-generation");
           currentlyGeneratingWorld = new KubernetesWorld(generateId(), false);
         }
