@@ -92,16 +92,20 @@ public class GameManager {
         k8s = new KubernetesWorld(generateId(), true);
       }
 
+      // create game
+      GameServer gameServer = new GameServer(type, k8s);
+      gameServers.put(gameServer.getId(), gameServer); // add to game manager
+
       // stop pregen
       if (currentlyGeneratingWorld != null) {
         System.out.println("New game starting. Pausing world pre-generation");
         currentlyGeneratingWorld.pausePreGen();
       }
 
-      // start game
-      GameServer gameServer = new GameServer(type, k8s);
+      // start and register game
       gameServer.start();
-      registerServer(gameServer);
+      ServerInfo info = ProxyServer.getInstance().constructServerInfo(gameServer.getId(), gameServer.getAddress(), "BeansPlusPlus Server", false);
+      ProxyServer.getInstance().getServers().put(gameServer.getId(), info); // register to proxy
 
       // tell players about game
       player.sendMessage(new ComponentBuilder("Server created successfully! ID: " + gameServer.getId()).color(ChatColor.GREEN).create());
@@ -156,14 +160,6 @@ public class GameManager {
    */
   public Collection<String> getAvailableGameIds() {
     return gameServers.keySet();
-  }
-
-  private void registerServer(GameServer gameServer) {
-    ServerInfo info = ProxyServer.getInstance().constructServerInfo(gameServer.getId(), gameServer.getAddress(), "BeansPlusPlus Server", false);
-
-    ProxyServer.getInstance().getServers().put(gameServer.getId(), info); // register to proxy
-
-    gameServers.put(gameServer.getId(), gameServer); // add to game manager
   }
 
   private void unregisterServer(String gameId) {
