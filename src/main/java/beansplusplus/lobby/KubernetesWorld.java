@@ -51,7 +51,6 @@ public class KubernetesWorld {
   public static final ApiClient CLIENT = setupClient();
   private static final CoreV1Api CORE_API = new CoreV1Api();
   private static final BatchV1Api BATCH_API = new BatchV1Api();
-  private static boolean createdConfigMap = false;
 
   private static ApiClient setupClient() {
     try {
@@ -159,7 +158,7 @@ public class KubernetesWorld {
   private String createPVC() throws ApiException {
     pvcName = gameName + (System.currentTimeMillis() / 1000);
     V1PersistentVolumeClaim pvc = PVC_TEMPLATE.metadata(PVC_TEMPLATE.getMetadata().name(pvcName));
-    pvc.getMetadata().getLabels().put("beans-mini-game", "true");
+    pvc.getMetadata().putLabelsItem("beans-mini-game", "true");
     CORE_API.createNamespacedPersistentVolumeClaim(K8S_NAMESPACE, PVC_TEMPLATE, null, null, null, null);
     return pvc.getMetadata().getName();
   }
@@ -170,18 +169,6 @@ public class KubernetesWorld {
   }
 
   private void createMinecraftPod(String podName, List<String> pluginURLs) throws ApiException {
-    // Deploy config map if it doesn't already exist
-    if (!createdConfigMap) {
-      try {
-        V1ConfigMap config = (V1ConfigMap) Yaml.load(new InputStreamReader(KubernetesWorld.class.getResourceAsStream("/config.yaml")));
-        CORE_API.createNamespacedConfigMap(K8S_NAMESPACE, config, null, null, null, null);
-        createdConfigMap = true;
-      } catch (IOException e) {
-        e.printStackTrace();
-        return;
-      }
-    }
-
     // Get copy of pod
     V1Pod pod = POD_TEMPLATE.metadata(POD_TEMPLATE.getMetadata().name(podName));
 
