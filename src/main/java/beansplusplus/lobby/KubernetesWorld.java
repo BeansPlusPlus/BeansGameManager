@@ -208,14 +208,14 @@ public class KubernetesWorld {
   public void pausePreGen() throws ApiException {
     V1Job job = BATCH_API.readNamespacedJob(preGenJobName, K8S_NAMESPACE, null);
     job.getSpec().suspend(true);
-    BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch(job.toString()), null, null, null, null, null);
+    BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch(Yaml.dump(job)), null, null, null, null, null);
     preGenPaused = true;
   }
 
   public void resumePreGen() throws ApiException {
     V1Job job = BATCH_API.readNamespacedJob(preGenJobName, K8S_NAMESPACE, null);
     job.getSpec().suspend(false);
-    BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch(job.toString()), null, null, null, null, null);
+    BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch(Yaml.dump(job)), null, null, null, null, null);
     preGenPaused = false;
   }
 
