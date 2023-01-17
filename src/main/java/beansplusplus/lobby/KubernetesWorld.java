@@ -104,7 +104,7 @@ public class KubernetesWorld {
     try {
       // Create game pod
       gameJobName = gameName + "-game";
-      createMinecraftPod(gameJobName, List.of(new String[]{CONFIG_PLUGIN_URL, jarUrl}));
+      createMinecraftPod(gameJobName, List.of(new String[]{CONFIG_PLUGIN_URL, jarUrl}), true);
 
       // Wait for pod to start then return IP
       Call call = CORE_API.listNamespacedPodCall(K8S_NAMESPACE, null, null, null, null, null, null, null, null, 300, true, null);
@@ -166,12 +166,15 @@ public class KubernetesWorld {
 
   private void createPreGen() throws ApiException {
     preGenJobName = gameName + "-pregen";
-    createMinecraftPod(preGenJobName, List.of(new String[]{PREGEN_PLUGIN_URL, CHUNKY_PLUGIN_URL}));
+    createMinecraftPod(preGenJobName, List.of(new String[]{PREGEN_PLUGIN_URL, CHUNKY_PLUGIN_URL}), false);
   }
 
-  private void createMinecraftPod(String podName, List<String> pluginURLs) throws ApiException {
+  private void createMinecraftPod(String podName, List<String> pluginURLs, boolean autoStop) throws ApiException {
     // Get copy of pod
     V1Pod pod = POD_TEMPLATE.metadata(POD_TEMPLATE.getMetadata().name(podName));
+
+    // Set auto stop
+    pod.getSpec().getContainers().get(0).addEnvItem(new V1EnvVar().name("ENABLE_AUTOSTOP").value(autoStop ? "TRUE" : "FALSE"));
 
     // Set Init command
     List<String> initCommand = new ArrayList<>(List.of(new String[]{"wget", "-P", "/plugins"}));

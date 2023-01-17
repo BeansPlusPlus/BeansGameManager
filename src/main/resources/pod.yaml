@@ -45,8 +45,6 @@ spec:
           value: Beans++
         - name: DIFFICULTY
           value: easy
-        - name: ENABLE_AUTOSTOP
-          value: "TRUE"
         - name: ONLINE_MODE  # needed for bungeecord
           value: "FALSE"
         - name: COPY_CONFIG_DEST
@@ -65,6 +63,7 @@ spec:
           value: 2500M
         - name: USE_AIKAR_FLAGS
           value: "TRUE"
+        # ENABLE_AUTOSTOP set in java
       readinessProbe:
         exec:
           command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
