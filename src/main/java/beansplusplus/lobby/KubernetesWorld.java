@@ -210,22 +210,22 @@ public class KubernetesWorld {
   }
 
   public void pausePreGen() throws ApiException {
-    V1Job job = BATCH_API.readNamespacedJob(preGenJobName, K8S_NAMESPACE, null);
-    job.getSpec().suspend(true);
+    //V1Job job = BATCH_API.readNamespacedJob(preGenJobName, K8S_NAMESPACE, null);
+    //job.getSpec().suspend(true);
     //BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch(Yaml.dump(job)), null, null, "example-field-manager", null, null);
     PatchUtils.patch(
             V1Job.class,
             () -> BATCH_API.patchNamespacedJobCall(
                     preGenJobName,
                     K8S_NAMESPACE,
-                    new V1Patch(Yaml.dump(job)),
+                    new V1Patch("[{\"op\":\"replace\",\"path\":\"/spec/suspend\",\"value\":true}]"),
                     null,
                     null,
-                    "example-field-manager", // field-manager is required for server-side apply
+                    null, // field-manager is required for server-side apply
                     null,
                     true,
                     null),
-            V1Patch.PATCH_FORMAT_APPLY_YAML,
+            V1Patch.PATCH_FORMAT_STRATEGIC_MERGE_PATCH,
             BATCH_API.getApiClient());
     preGenPaused = true;
   }
@@ -239,14 +239,14 @@ public class KubernetesWorld {
             () -> BATCH_API.patchNamespacedJobCall(
                     preGenJobName,
                     K8S_NAMESPACE,
-                    new V1Patch(Yaml.dump(job)),
+                    new V1Patch("[{\"op\":\"replace\",\"path\":\"/spec/suspend\",\"value\":true}]"),
                     null,
                     null,
-                    "example-field-manager", // field-manager is required for server-side apply
+                    null, // field-manager is required for server-side apply
                     null,
                     true,
                     null),
-            V1Patch.PATCH_FORMAT_APPLY_YAML,
+            V1Patch.PATCH_FORMAT_STRATEGIC_MERGE_PATCH,
             BATCH_API.getApiClient());
     preGenPaused = false;
   }

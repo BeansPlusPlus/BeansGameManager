@@ -97,12 +97,10 @@ public class GameManager {
       gameServers.put(gameServer.getId(), gameServer); // add to game manager
 
       // stop pregen
-      /**
       if (currentlyGeneratingWorld != null) {
         System.out.println("New game starting. Pausing world pre-generation");
         currentlyGeneratingWorld.pausePreGen();
       }
-       */
 
       // start and register game
       gameServer.start();
