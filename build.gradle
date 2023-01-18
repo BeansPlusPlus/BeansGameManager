@@ -27,6 +27,10 @@ dependencies {
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
+//    manifest {
+//        attributes 'Main-Class': 'beansplusplus.lobby.Main'
+//    }
+
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } // to create phat jar
     } {
