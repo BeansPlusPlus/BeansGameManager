@@ -178,13 +178,13 @@ public class KubernetesWorld {
     // Encapsulate in job
     V1Job job = new V1JobBuilder()
         .withNewMetadata()
-        .withName(podName)
+          .withName(podName)
         .endMetadata()
         .withNewSpec()
-        .withTemplate(new V1PodTemplateSpec().spec(pod.getSpec()))
-        .withParallelism(1)
-        .withCompletions(1)
-        .withTtlSecondsAfterFinished(8000)
+          .withTemplate(new V1PodTemplateSpec().spec(pod.getSpec()))
+          .withParallelism(1)
+          .withCompletions(1)
+          .withTtlSecondsAfterFinished(8000)
         .endSpec()
         .build();
 
