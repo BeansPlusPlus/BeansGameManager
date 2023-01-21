@@ -2,6 +2,7 @@ package beansplusplus.lobby;
 
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.config.ServerInfo;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.net.InetSocketAddress;
 
@@ -39,5 +40,9 @@ public class GameServer {
 
   public ServerInfo getServerInfo() {
     return ProxyServer.getInstance().getServerInfo(id);
+  }
+
+  public void connectPlayerToServer(ProxiedPlayer player) {
+    player.connect(getServerInfo());
   }
 }
