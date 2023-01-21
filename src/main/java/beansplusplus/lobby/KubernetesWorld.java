@@ -12,6 +12,7 @@ import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.PatchUtils;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Yaml;
+import net.md_5.bungee.api.ProxyServer;
 import okhttp3.Call;
 
 import java.io.*;
@@ -25,24 +26,6 @@ import java.util.logging.Logger;
 // Remember: Don't forget to update the service account permissions if you're changing that this tries to access
 
 public class KubernetesWorld {
-  public static class KubernetesException extends Exception {
-    public KubernetesException(Exception e) {
-      super(e);
-    }
-
-    public KubernetesException(String message) {
-      super(message);
-    }
-
-    public void logError(Logger logger) {
-      logger.severe("Message: " + getMessage());
-
-      for (StackTraceElement element : getStackTrace()) {
-        logger.severe(element.toString());
-      }
-    }
-  }
-
   private static final String CONFIG_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/GameConfigPlugin-1.0-SNAPSHOT.jar";
   private static final String PREGEN_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/PreGen-1.0.jar";
   private static final String CHUNKY_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/Chunky-1.3.52.jar"; // can't use the spigot website :/
@@ -90,17 +73,12 @@ public class KubernetesWorld {
 
   private boolean preGenPaused = false;
 
-  public KubernetesWorld(String id, boolean skipPreGen) throws ApiException {
+  public KubernetesWorld(String id) {
     this.id = id;
     gameName = "beans-" + id;
-    createPVC();
-
-    if (!skipPreGen) {
-      createPreGen();
-    }
   }
 
-  public InetSocketAddress start(String jarUrl) throws KubernetesException {
+  public InetSocketAddress start(String jarUrl) throws GameServerException {
     try {
       // Create game pod
       gameJobName = gameName + "-game";
@@ -113,19 +91,18 @@ public class KubernetesWorld {
       for (Watch.Response<V1Pod> event : watch) {
         V1Pod p = event.object;
         if (
-          p.getMetadata().getName().startsWith(gameJobName) // temporary. Replace with gameJobName
-          && p.getStatus().getContainerStatuses() != null
-          && p.getStatus().getContainerStatuses().get(0).getReady()
+            p.getMetadata().getName().startsWith(gameJobName) // temporary. Replace with gameJobName
+                && p.getStatus().getContainerStatuses() != null
+                && p.getStatus().getContainerStatuses().get(0).getReady()
         ) {
           int port = p.getSpec().getContainers().get(0).getPorts().get(0).getContainerPort();
           return InetSocketAddress.createUnresolved(p.getStatus().getPodIP(), port);
         }
       }
 
-      throw new KubernetesException("Failed to start pod. Could not find in the list of running pods.");
+      throw new GameServerException("Failed to start pod. Could not find in the list of running pods.");
     } catch (ApiException e) {
-      e.printStackTrace();
-      throw new KubernetesException(e);
+      throw new GameServerException(e);
     }
   }
 
@@ -137,7 +114,7 @@ public class KubernetesWorld {
       V1Job job = BATCH_API.readNamespacedJob(gameJobName, K8S_NAMESPACE, null);
       return job.getStatus().getSucceeded() != null && job.getStatus().getSucceeded() == 1;
     } catch (ApiException e) {
-      e.printStackTrace();
+      new GameServerException(e).logError();
       // if there is an issue with connecting to the API server, it's safer to assume the game is still ongoing.
       return false;
     }
@@ -151,22 +128,32 @@ public class KubernetesWorld {
       V1Job job = BATCH_API.readNamespacedJob(preGenJobName, K8S_NAMESPACE, null);
       return job.getStatus().getSucceeded() != null && job.getStatus().getSucceeded() == 1;
     } catch (ApiException e) {
-      e.printStackTrace();
       return false;
     }
   }
 
-  private String createPVC() throws ApiException {
+  public String createPersistentVolumeClaim() throws GameServerException {
     pvcName = gameName + "-" + (System.currentTimeMillis() / 1000);
     V1PersistentVolumeClaim pvc = PVC_TEMPLATE.metadata(PVC_TEMPLATE.getMetadata().name(pvcName));
     pvc.getMetadata().putLabelsItem("beans-mini-game", "true");
-    CORE_API.createNamespacedPersistentVolumeClaim(K8S_NAMESPACE, PVC_TEMPLATE, null, null, null, null);
+
+    try {
+      CORE_API.createNamespacedPersistentVolumeClaim(K8S_NAMESPACE, PVC_TEMPLATE, null, null, null, null);
+    } catch (ApiException e) {
+      throw new GameServerException(e);
+    }
+
     return pvc.getMetadata().getName();
   }
 
-  private void createPreGen() throws ApiException {
+  public void createPreGen() throws GameServerException {
     preGenJobName = gameName + "-pregen";
-    createMinecraftPod(preGenJobName, List.of(new String[]{PREGEN_PLUGIN_URL, CHUNKY_PLUGIN_URL}), false);
+
+    try {
+      createMinecraftPod(preGenJobName, List.of(new String[]{PREGEN_PLUGIN_URL, CHUNKY_PLUGIN_URL}), false);
+    } catch (ApiException e) {
+      throw new GameServerException(e);
+    }
   }
 
   private void createMinecraftPod(String podName, List<String> pluginURLs, boolean autoStop) throws ApiException {
@@ -190,16 +177,16 @@ public class KubernetesWorld {
 
     // Encapsulate in job
     V1Job job = new V1JobBuilder()
-            .withNewMetadata()
-              .withName(podName)
-            .endMetadata()
-            .withNewSpec()
-              .withTemplate(new V1PodTemplateSpec().spec(pod.getSpec()))
-              .withParallelism(1)
-              .withCompletions(1)
-              .withTtlSecondsAfterFinished(8000)
-            .endSpec()
-            .build();
+        .withNewMetadata()
+          .withName(podName)
+        .endMetadata()
+        .withNewSpec()
+          .withTemplate(new V1PodTemplateSpec().spec(pod.getSpec()))
+          .withParallelism(1)
+          .withCompletions(1)
+          .withTtlSecondsAfterFinished(8000)
+        .endSpec()
+        .build();
 
     // Deploy job
     BATCH_API.createNamespacedJob(K8S_NAMESPACE, job, null, null, null, null);
@@ -209,13 +196,22 @@ public class KubernetesWorld {
     return id;
   }
 
-  public void pausePreGen() throws ApiException {
-    BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch("[{\"op\":\"replace\",\"path\":\"/spec/suspend\",\"value\":true}]"), null, null, "example-field-manager", null, null);
+  public void pausePreGen() throws GameServerException {
+    try {
+      BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch("[{\"op\":\"replace\",\"path\":\"/spec/suspend\",\"value\":true}]"), null, null, "example-field-manager", null, null);
+    } catch (ApiException e) {
+      throw new GameServerException(e);
+    }
     preGenPaused = true;
   }
 
-  public void resumePreGen() throws ApiException {
-    BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch("[{\"op\":\"replace\",\"path\":\"/spec/suspend\",\"value\":false}]"), null, null, "example-field-manager", null, null);
+  public void resumePreGen() throws GameServerException {
+    try {
+      BATCH_API.patchNamespacedJob(preGenJobName, K8S_NAMESPACE, new V1Patch("[{\"op\":\"replace\",\"path\":\"/spec/suspend\",\"value\":false}]"), null, null, "example-field-manager", null, null);
+    } catch (ApiException e) {
+      throw new GameServerException(e);
+    }
+
     preGenPaused = false;
   }
 

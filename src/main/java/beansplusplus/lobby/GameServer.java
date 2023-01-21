@@ -2,6 +2,7 @@ package beansplusplus.lobby;
 
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.config.ServerInfo;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.net.InetSocketAddress;
 
@@ -25,10 +26,6 @@ public class GameServer {
     return id;
   }
 
-  public void start() throws KubernetesWorld.KubernetesException {
-    address = k8s.start(type.getJarURL());
-  }
-
   public boolean isFinished() {
     return k8s.isGameFinished();
   }
@@ -39,5 +36,9 @@ public class GameServer {
 
   public ServerInfo getServerInfo() {
     return ProxyServer.getInstance().getServerInfo(id);
+  }
+
+  public void connectPlayerToServer(ProxiedPlayer player) {
+    player.connect(getServerInfo());
   }
 }
