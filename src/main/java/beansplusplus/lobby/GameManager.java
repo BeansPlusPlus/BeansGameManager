@@ -88,12 +88,12 @@ public class GameManager {
       ProxiedPlayer player = ProxyServer.getInstance().getPlayer(creatorUsername);
       if (player == null) return;
 
-      GameServer gameServer = new GameServer(type, getNextKubernetesWorld());
+      KubernetesWorld world = getNextKubernetesWorld();
+      world.start(type.getJarURL());
 
       pausePreGen();
 
-      gameServer.start();
-
+      GameServer gameServer = new GameServer(type, world);
       registerServer(gameServer);
 
       player.sendMessage(new ComponentBuilder("Server created successfully! ID: " + gameServer.getId()).color(ChatColor.GREEN).create());

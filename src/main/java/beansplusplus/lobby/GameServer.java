@@ -26,10 +26,6 @@ public class GameServer {
     return id;
   }
 
-  public void start() throws KubernetesWorld.KubernetesException {
-    address = k8s.start(type.getJarURL());
-  }
-
   public boolean isFinished() {
     return k8s.isGameFinished();
   }
