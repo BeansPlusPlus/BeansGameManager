@@ -8,6 +8,7 @@ import net.md_5.bungee.api.config.ServerInfo;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -89,11 +90,11 @@ public class GameManager {
       if (player == null) return;
 
       KubernetesWorld world = getNextKubernetesWorld();
-      world.start(type.getJarURL());
+      InetSocketAddress address = world.start(type.getJarURL());
 
       pausePreGen();
 
-      GameServer gameServer = new GameServer(type, world);
+      GameServer gameServer = new GameServer(type, world, address);
       registerServer(gameServer);
 
       player.sendMessage(new ComponentBuilder("Server created successfully! ID: " + gameServer.getId()).color(ChatColor.GREEN).create());
