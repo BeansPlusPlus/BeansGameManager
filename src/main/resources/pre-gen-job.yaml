@@ -1,0 +1,94 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: TOBEADDED
+  labels:
+    purpose: beans-pre-gen
+spec:
+  template:
+    metadata:
+      labels:
+        purpose: beans-pre-gen
+    spec:
+      priorityClassName: beans-pre-gen
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: mod-download
+          image: alpine
+          command:
+            - wget
+            - https://saggyresourcepack.blob.core.windows.net/www/PreGen-1.0.jar
+            - https://saggyresourcepack.blob.core.windows.net/www/Chunky-1.3.52.jar
+            - -P
+            - /plugins
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: plugins
+              mountPath: "/plugins"
+      containers:
+        - name: minecraft-server
+          image: itzg/minecraft-server
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: EULA
+              value: "TRUE"
+            - name: VERSION
+              value: "1.19.2"
+            - name: TYPE
+              value: PAPER
+            - name: COPY_CONFIG_DEST
+              value: /data
+            - name: MEMORY
+              value: 2500M
+            - name: USE_AIKAR_FLAGS
+              value: "TRUE"
+          readinessProbe:
+            exec:
+              command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            failureThreshold: 20
+          livenessProbe:
+            exec:
+              command: ["/usr/local/bin/mc-monitor", "status", "--host", "localhost"]
+            initialDelaySeconds: 120
+            periodSeconds: 60
+          resources:
+            requests:
+              memory: "3Gi"
+              cpu: "3000m"
+              ephemeral-storage: "3Gi"
+            limits:
+              memory: "4Gi"
+              cpu: "3500m"
+              ephemeral-storage: "15Gi"
+          volumeMounts:
+            - name: world
+              mountPath: /data
+            - name: plugins
+              mountPath: /plugins
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      volumes:
+        - name: world  # always keep world as volume index zero
+          persistentVolumeClaim:
+            claimName: TOBEADDED
+        - name: plugins
+          emptyDir: {}

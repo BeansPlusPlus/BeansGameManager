@@ -1,6 +1,5 @@
 package beansplusplus.lobby;
 
-import io.kubernetes.client.openapi.ApiException;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -14,21 +13,13 @@ import java.util.concurrent.TimeUnit;
 
 public class GameManager {
   private static final GameManager GAME_MANAGER = new GameManager();
-
-  private static final int MAX_QUEUE_SIZE = 5;
+  private static final KubernetesManager K8S_MANAGER = new KubernetesManager();
 
   public static GameManager getInstance() {
     return GAME_MANAGER;
   }
 
-  private final Random random = new Random();
-
-  private final Map<String, GameServer> gameServers = new HashMap<>();
-
   private Plugin plugin;
-
-  private Queue<KubernetesWorld> preGenWorlds = new LinkedList<>();
-  private KubernetesWorld currentlyGeneratingWorld;
 
   /**
    * Set the game manager plugin instance
@@ -38,27 +29,33 @@ public class GameManager {
     this.plugin = plugin;
   }
 
-  /**
-   * Pre-generate kubernetes pods and load chunks within the world border
-   */
-  public void preGenWorld() {
+  public void tick() {
     try {
-      if (currentlyGeneratingWorld == null) {
-        if (gameServers.size() > 0 || preGenWorlds.size() >= MAX_QUEUE_SIZE) return;
+      Map<String, InetSocketAddress> k8sGames = K8S_MANAGER.getGames();
+      // add new games to bungeecord
+      for (String id : k8sGames.keySet()) {
+        if (k8sGames.get(id) == null) {
+          continue;
+        }
+        if (!ProxyServer.getInstance().getServers().containsKey(id)) {
+          ServerInfo info = ProxyServer.getInstance().constructServerInfo(id, k8sGames.get(id), "BeansPlusPlus Server", false);
+          ProxyServer.getInstance().getServers().put(id, info);
+        }
+      }
+      // remove old games from bungeecord
+      for (String id : ProxyServer.getInstance().getServers().keySet()) {
+        if (id.equals("lobby")) {
+          continue;
+        }
+        if (!k8sGames.containsKey(id) || k8sGames.get(id) == null) {
+          ProxyServer.getInstance().getServers().remove(id);
+        }
+      }
 
-        currentlyGeneratingWorld = createPreGen();
-      }
-      if (currentlyGeneratingWorld.isPreGenPaused() && gameServers.size() == 0) {
-        ProxyServer.getInstance().getLogger().info("No games running. Un-pausing world pre-generation");
-        currentlyGeneratingWorld.resumePreGen();
-      }
-      if (currentlyGeneratingWorld.isPreGenFinished()) {
-        ProxyServer.getInstance().getLogger().info("World pre-generation finished");
-        preGenWorlds.add(currentlyGeneratingWorld);
-        currentlyGeneratingWorld = null;
-      }
+      // tick kubernetes manager
+      K8S_MANAGER.tick();
     } catch (GameServerException e) {
-      e.logError();
+      e.printStackTrace();
     }
   }
 
@@ -89,20 +86,37 @@ public class GameManager {
       ProxiedPlayer player = ProxyServer.getInstance().getPlayer(creatorUsername);
       if (player == null) return;
 
-      KubernetesWorld world = getNextKubernetesWorld();
-      InetSocketAddress address = world.start(type.getJarURL());
-
-      pausePreGen();
-
-      GameServer gameServer = new GameServer(type, world, address);
-      registerServer(gameServer);
-
-      player.sendMessage(new ComponentBuilder("Server created successfully! ID: " + gameServer.getId()).color(ChatColor.GREEN).create());
+      // tell everyone a game is being created
       for (ProxiedPlayer lobbyPlayer : ProxyServer.getInstance().getServerInfo("lobby").getPlayers()) {
-        lobbyPlayer.sendMessage(new ComponentBuilder(creatorUsername + " started a game of " + gameServer.getType().string() + ". Join by running /game join " + gameServer.getId()).color(ChatColor.GREEN).create());
+        lobbyPlayer.sendMessage(new ComponentBuilder(creatorUsername + " is creating a game of " + type.string()).color(ChatColor.GREEN).create());
       }
 
-      gameServer.connectPlayerToServer(player);
+      // create the game
+      String id = K8S_MANAGER.createGame(type.getJarURL());
+
+      // wait for game to create
+      boolean found = false;
+      for (int i = 0; i < 300; i++) {
+        Thread.sleep(1000);
+        Map<String, InetSocketAddress> games = K8S_MANAGER.getGames();
+        if (ProxyServer.getInstance().getServers().containsKey(id)) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        throw new GameServerException("World hasn't started after 5 minutes");
+      }
+
+      // Tell everyone a game has been created
+      player.sendMessage(new ComponentBuilder("Server created successfully! ID: " + id).color(ChatColor.GREEN).create());
+      for (ProxiedPlayer lobbyPlayer : ProxyServer.getInstance().getServerInfo("lobby").getPlayers()) {
+        lobbyPlayer.sendMessage(new ComponentBuilder(creatorUsername + " started a game of " + type.string() + ". Join by running /game join " + id).color(ChatColor.GREEN).create());
+      }
+
+      // Connect the creator to the game
+      player.connect(ProxyServer.getInstance().getServerInfo(id));
+
     } catch (GameServerException e) {
       ProxyServer.getInstance().getLogger().severe("Failed to start kubernetes pod. Printing stacktrace...");
 
@@ -113,32 +127,9 @@ public class GameManager {
       if (player == null) return;
 
       player.sendMessage(new ComponentBuilder("Server failed to start. Please contact the server administrator.").color(ChatColor.DARK_RED).create());
+    } catch (InterruptedException e) {
+      e.printStackTrace();
     }
-  }
-
-  /**
-   * Remove unregister servers that are turned off
-   */
-  public void cleanServers() {
-    for (GameServer gameServer : gameServers.values()) {
-      if (gameServer.isFinished()) {
-        unregisterServer(gameServer.getId());
-      }
-    }
-  }
-
-  /**
-   * Get a server by id
-   *
-   * @param id
-   * @return
-   */
-  public GameServer getServer(String id) {
-    if (!gameServers.containsKey(id)) {
-      return null;
-    }
-
-    return gameServers.get(id);
   }
 
   /**
@@ -146,56 +137,9 @@ public class GameManager {
    *
    * @return
    */
-  public Collection<String> getAvailableGameIds() {
-    return gameServers.keySet();
-  }
-
-  private KubernetesWorld createPreGen() throws GameServerException {
-    ProxyServer.getInstance().getLogger().info("No world currently generating, queue less and desired, no game running. Starting world pre-generation");
-    currentlyGeneratingWorld = new KubernetesWorld(generateId());
-    currentlyGeneratingWorld.createPersistentVolumeClaim();
-    currentlyGeneratingWorld.createPreGen();
-    return currentlyGeneratingWorld;
-  }
-
-  private KubernetesWorld getNextKubernetesWorld() throws GameServerException {
-    if (preGenWorlds.size() > 0) {
-      return preGenWorlds.poll();
-    } else {
-      KubernetesWorld k8s = new KubernetesWorld(generateId());
-      k8s.createPersistentVolumeClaim();
-
-      return k8s;
-    }
-  }
-
-  private void pausePreGen() throws GameServerException {
-    if (currentlyGeneratingWorld != null) {
-      ProxyServer.getInstance().getLogger().info("New game starting. Pausing world pre-generation");
-      currentlyGeneratingWorld.pausePreGen();
-    }
-  }
-
-  private void registerServer(GameServer gameServer) {
-    gameServers.put(gameServer.getId(), gameServer);
-
-    ServerInfo info = ProxyServer.getInstance().constructServerInfo(gameServer.getId(), gameServer.getAddress(), "BeansPlusPlus Server", false);
-    ProxyServer.getInstance().getServers().put(gameServer.getId(), info);
-  }
-
-  private void unregisterServer(String gameId) {
-    gameServers.remove(gameId);
-
-    ProxyServer.getInstance().getServers().remove(gameId);
-  }
-
-  private String generateId() {
-    String id = null;
-
-    while (id == null || gameServers.containsKey(id)) {
-      id = "" + (random.nextInt(900) + 100);
-    }
-
-    return id;
+  public Set<String> getAvailableGameIds() {
+    Set<String> ids = new HashSet<>(ProxyServer.getInstance().getServers().keySet());
+    ids.remove("lobby");
+    return ids;
   }
 }
