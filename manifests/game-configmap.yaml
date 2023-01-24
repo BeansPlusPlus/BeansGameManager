@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beans-game
+data:
+  spigot.yml: |
+    settings:
+      bungeecord: true

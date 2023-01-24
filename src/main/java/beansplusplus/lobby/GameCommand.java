@@ -2,16 +2,15 @@ package beansplusplus.lobby;
 
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.TabExecutor;
-import net.md_5.bungee.event.EventHandler;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
+import java.util.Set;
 
 public class GameCommand extends Command implements TabExecutor {
   private final GameManager gameManager = GameManager.getInstance();
@@ -58,9 +57,8 @@ public class GameCommand extends Command implements TabExecutor {
     }
 
     for (String serverId : gameManager.getAvailableGameIds()) {
-      GameServer server = gameManager.getServer(serverId);
 
-      p.sendMessage(new ComponentBuilder(serverId + " - " + server.getType().string()).color(ChatColor.AQUA).create());
+      p.sendMessage(new ComponentBuilder(serverId).color(ChatColor.AQUA).create());
     }
   }
 
@@ -93,16 +91,16 @@ public class GameCommand extends Command implements TabExecutor {
     }
     String id = args[1];
 
-    GameServer server = gameManager.getServer(id);
+    Set<String> games = gameManager.getAvailableGameIds();
 
-    if (server == null) {
+    if (!games.contains(id)) {
       p.sendMessage(new ComponentBuilder("No server with that ID.").color(ChatColor.RED).create());
       p.sendMessage(new ComponentBuilder("See all games with /game list").color(ChatColor.RED).create());
 
       return;
     }
 
-    p.connect(server.getServerInfo());
+    p.connect(ProxyServer.getInstance().getServerInfo(id));
   }
 
   @Override
