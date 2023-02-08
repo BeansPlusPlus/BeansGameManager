@@ -39,7 +39,7 @@ public class KubernetesManager {
     private static final String NAMESPACE = withEnv("K8S_NAMESPACE", "beans-mini-games");
     private static final V1Job PRE_GEN_JOB = getJobTemplate("/pre-gen-job.yaml");
     private static final V1Job GAME_JOB = getJobTemplate("/game-job.yaml");
-    private static final String CONFIG_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/GameConfigPlugin-1.0-SNAPSHOT.jar";
+    private static final String GAME_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/BeansGamePlugin-1.0-SNAPSHOT.jar";
     private static final int PRE_GEN_NUM = 10;
     private static final int PRE_GEN_MAX_SIMULTANEOUS_JOBS = 1;
     private static final Random random = new Random();
@@ -187,7 +187,7 @@ public class KubernetesManager {
                         .endMetadata()
                         .editSpec()
                         .editInitContainer(0)
-                            .withCommand("wget", jarUrl, CONFIG_PLUGIN_URL, "-P", "/plugins")
+                            .withCommand("wget", jarUrl, GAME_PLUGIN_URL, "-P", "/plugins")
                         .endInitContainer()
                             .editVolume(0)
                                 .editPersistentVolumeClaim()
