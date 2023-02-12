@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "beans.fullname" . }}
+  labels:
+    {{- include "beans.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "beans.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "beans.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "beans.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: itzg/bungeecord
+          ports:
+            - name: minecraft
+              containerPort: 25565
+              protocol: TCP
+          env:
+            - name: K8S_STORAGE_CLASS
+              value: {{ .Values.gameStorageClass }}
+            - name: K8S_NAMESPACE
+              value: {{ .Release.Namespace }}
+            - name: K8S_GAME_PRIORITY_CLASS
+              value: {{ include "beans.fullname" . }}-game
+            - name: K8S_PRE_GEN_PRIORITY_CLASS
+              value: {{ include "beans.fullname" . }}-pregen
+            - name: K8S_GAME_CONFIG_MAP
+              value: {{ include "beans.fullname" . }}-game
+            {{ if .Values.bungeecordPlugins.download }}
+            - name: PLUGINS
+              value: {{ .Values.bungeecordPlugins.download }}
+            {{ end }}
+          readinessProbe:
+            exec:
+              command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            failureThreshold: 20
+          livenessProbe:
+            exec:
+              command: [ "/usr/local/bin/mc-monitor", "status", "--host", "localhost" ]
+            initialDelaySeconds: 120
+            periodSeconds: 60
+          resources:
+            requests:
+              memory: "600Mi"
+              cpu: "500m"
+              ephemeral-storage: "1Gi"
+            limits:
+              memory: "1Gi"
+              cpu: "2000m"
+              ephemeral-storage: "10Gi"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            {{ if .Values.bungeecordPlugins.path }}
+            - name: plugins
+              mountPath: /plugins
+            {{ end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "beans.fullname" . }}
+        {{ if .Values.bungeecordPlugins.path }}
+        - name: plugins
+          hostPath:
+            path: {{ .Values.bungeecordPlugins.path }}
+        {{ end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

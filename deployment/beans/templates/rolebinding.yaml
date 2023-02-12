@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "beans.fullname" . }}
+  labels:
+    {{- include "beans.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "beans.fullname" . }}
+roleRef:
+  kind: Role
+  name: {{ include "beans.fullname" . }}
+  apiGroup: rbac.authorization.k8s.io

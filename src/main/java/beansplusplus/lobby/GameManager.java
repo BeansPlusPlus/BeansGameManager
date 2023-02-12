@@ -74,9 +74,24 @@ public class GameManager {
     }, 0, TimeUnit.SECONDS);
   }
 
+  public void deleteGame(String id) {
+    ProxyServer.getInstance().getServers().remove(id);
+    try {
+      K8S_MANAGER.deleteGame(id);
+
+      for (ProxiedPlayer lobbyPlayer : ProxyServer.getInstance().getServerInfo("lobby").getPlayers()) {
+        lobbyPlayer.sendMessage(new ComponentBuilder("Deleted game with ID: " + id).color(ChatColor.RED).create());
+      }
+
+    } catch (GameServerException e) {
+      e.printStackTrace();
+    }
+  }
+
   /**
    * Create a new server by game type
    *
+   * @param type
    * @param type
    * @param creatorUsername
    * @return

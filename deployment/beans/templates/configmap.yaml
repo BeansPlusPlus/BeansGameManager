@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: beans-bungeecord
+  name: {{ include "beans.fullname" . }}
 data:
   config.yml: |
     groups:
@@ -19,5 +19,5 @@ data:
     servers:
       lobby:
         motd: 'Beans++ lobby'
-        address: ellie-lifted:25569  # i swear that wasn't intentional
+        address: {{ .Values.lobbyAddress }}
         restricted: false

@@ -23,11 +23,9 @@ import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Config;
 import io.kubernetes.client.util.Yaml;
 
-import javax.print.attribute.standard.PrinterMakeAndModel;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
-import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -35,8 +33,12 @@ import java.util.Set;
 
 public class KubernetesManager {
 
-    private static final String STORAGE_CLASS_NAME = withEnv("K8S_STORAGE_CLASS_NAME", "local-path");
+    private static final String STORAGE_CLASS_NAME = withEnv("K8S_STORAGE_CLASS", "local-path");
     private static final String NAMESPACE = withEnv("K8S_NAMESPACE", "beans-mini-games");
+    private static final String GAME_PRIORITY_CLASS = withEnv("K8S_GAME_PRIORITY_CLASS", "beans-game");
+    private static final String PRE_GEN_PRIORITY_CLASS = withEnv("K8S_PRE_GEN_PRIORITY_CLASS", "beans-pre-gen");
+    private static final String GAME_CONFIG_MAP = withEnv("K8S_GAME_CONFIG_MAP", "beans-game-config");
+
     private static final V1Job PRE_GEN_JOB = getJobTemplate("/pre-gen-job.yaml");
     private static final V1Job GAME_JOB = getJobTemplate("/game-job.yaml");
     private static final String CONFIG_PLUGIN_URL = "https://saggyresourcepack.blob.core.windows.net/www/GameConfigPlugin-1.0-SNAPSHOT.jar";
@@ -89,6 +91,11 @@ public class KubernetesManager {
                     String claimName = preGenJob.getSpec().getTemplate().getSpec().getVolumes().get(0).getPersistentVolumeClaim().getClaimName();
                     setClaimStage(claimName, "ready");
                     batchV1Api.deleteNamespacedJob(preGenJob.getMetadata().getName(), NAMESPACE, null, null, null, null, null, null);
+
+                    // Delete job's pods
+                    for (V1Pod gamePod : coreV1Api.listNamespacedPod(NAMESPACE, null, null, null, null, "job-name=" + preGenJob.getMetadata().getName(), null, null, null, null, null).getItems()) {
+                        coreV1Api.deleteNamespacedPod(gamePod.getMetadata().getName(), NAMESPACE, null, null, null, null, null, null);
+                    }
                 }
             }
 
@@ -97,11 +104,7 @@ public class KubernetesManager {
             for (V1Job gameJob : gameJobs.getItems()) {
                 // if job finished
                 if (gameJob.getStatus().getSucceeded() != null && gameJob.getStatus().getSucceeded() == 1) {
-                    // Update claim stage and delete job
-                    String claimName = gameJob.getSpec().getTemplate().getSpec().getVolumes().get(0).getPersistentVolumeClaim().getClaimName();
-                    setClaimStage(claimName, "finished");
-                    setClaimGameFinishTimeToNow(claimName);
-                    batchV1Api.deleteNamespacedJob(gameJob.getMetadata().getName(), NAMESPACE, null, null, null, null, null, null);
+                    deleteGame(gameJob.getMetadata().getLabels().get("game-id"));
                 }
             }
 
@@ -114,6 +117,24 @@ public class KubernetesManager {
 
             for (int i = 0; i < toCreate; i++) {
                 createPreGenWorld();
+            }
+        } catch (ApiException e) {
+            throw new GameServerException(e);
+        }
+    }
+
+    public void deleteGame(String id) throws GameServerException {
+        try {
+            for (V1Job gameJob : batchV1Api.listNamespacedJob(NAMESPACE, null, null, null, null, "purpose=beans-game,game-id=" + id, null, null, null, null, null).getItems()) {
+                String claimName = gameJob.getSpec().getTemplate().getSpec().getVolumes().get(0).getPersistentVolumeClaim().getClaimName();
+                setClaimStage(claimName, "finished");
+                setClaimGameFinishTimeToNow(claimName);
+                batchV1Api.deleteNamespacedJob(gameJob.getMetadata().getName(), NAMESPACE, null, null, null, null, null, null);
+
+                // Delete job's pods
+                for (V1Pod gamePod : coreV1Api.listNamespacedPod(NAMESPACE, null, null, null, null, "job-name=" + gameJob.getMetadata().getName(), null, null, null, null, null).getItems()) {
+                    coreV1Api.deleteNamespacedPod(gamePod.getMetadata().getName(), NAMESPACE, null, null, null, null, null, null);
+                }
             }
         } catch (ApiException e) {
             throw new GameServerException(e);
@@ -186,13 +207,19 @@ public class KubernetesManager {
                             .addToLabels("game-id", id)
                         .endMetadata()
                         .editSpec()
-                        .editInitContainer(0)
-                            .withCommand("wget", jarUrl, CONFIG_PLUGIN_URL, "-P", "/plugins")
-                        .endInitContainer()
+                            .withPriorityClassName(GAME_PRIORITY_CLASS)
+                            .editInitContainer(0)
+                                .withCommand("wget", jarUrl, CONFIG_PLUGIN_URL, "-P", "/plugins")
+                            .endInitContainer()
                             .editVolume(0)
                                 .editPersistentVolumeClaim()
                                     .withClaimName(claimName)
                                 .endPersistentVolumeClaim()
+                            .endVolume()
+                            .editVolume(1)
+                                .editConfigMap()
+                                    .withName(GAME_CONFIG_MAP)
+                                .endConfigMap()
                             .endVolume()
                         .endSpec()
                     .endTemplate()
@@ -307,6 +334,7 @@ public class KubernetesManager {
                 .withNewSpecLike(PRE_GEN_JOB.getSpec())
                     .editTemplate()
                         .editSpec()
+                            .withPriorityClassName(PRE_GEN_PRIORITY_CLASS)
                             .editVolume(0)
                                 .editPersistentVolumeClaim()
                                     .withClaimName(claimName)

@@ -10,7 +10,7 @@ spec:
       labels:
         purpose: beans-pre-gen
     spec:
-      priorityClassName: beans-pre-gen
+      priorityClassName: TOBEADDED
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000

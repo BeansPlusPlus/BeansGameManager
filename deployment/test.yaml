@@ -1,0 +1,10 @@
+gameStorageClass: "local-path"
+
+service:
+  annotations:
+    "mc-router.itzg.me/externalServerName": "test.beans.isaacirvine.me"
+
+bungeecordPlugins:
+  download: https://saggyresourcepack.blob.core.windows.net/www/BeansGameManager-1.0.jar
+
+lobbyAddress: "ellie-lifted:25569"

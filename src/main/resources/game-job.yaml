@@ -10,7 +10,7 @@ spec:
       labels:
         purpose: beans-game
     spec:
-      priorityClassName: beans-games
+      priorityClassName: TOBEADDED
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
@@ -108,8 +108,8 @@ spec:
         - name: world  # always keep world as volume index zero
           persistentVolumeClaim:
             claimName: TOBEADDED
+        - name: config  # always keep config as volume index one
+          configMap:
+            name: TOBEADDED
         - name: plugins
           emptyDir: {}
-        - name: config
-          configMap:
-            name: beans-game

@@ -1,0 +1,41 @@
+# Default values for Beans.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+gameStorageClass: ""
+
+bungeecordPlugins:
+  # host path to plugins folder
+  path: ""
+  # comma separated list of plugin URLs
+  download: ""
+
+# The address and port of the lobby server
+lobbyAddress: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+
+service:
+  type: ClusterIP
+  port: 25565
+  annotations: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

@@ -34,6 +34,8 @@ public class GameCommand extends Command implements TabExecutor {
       join(p, args);
     } else if (args[0].equalsIgnoreCase("create")) {
       create(p, args);
+    } else if (args[0].equalsIgnoreCase("delete")) {
+      delete(p, args);
     } else {
       printCommands(p);
     }
@@ -43,6 +45,7 @@ public class GameCommand extends Command implements TabExecutor {
     p.sendMessage(new ComponentBuilder("/game list").color(ChatColor.RED).create());
     p.sendMessage(new ComponentBuilder("/game join <game id>").color(ChatColor.RED).create());
     p.sendMessage(new ComponentBuilder("/game create <game type>").color(ChatColor.RED).create());
+    p.sendMessage(new ComponentBuilder("/game delete <game type>").color(ChatColor.RED).create());
   }
 
   private void printTypes(ProxiedPlayer p) {
@@ -103,10 +106,36 @@ public class GameCommand extends Command implements TabExecutor {
     p.connect(ProxyServer.getInstance().getServerInfo(id));
   }
 
+  private void delete(ProxiedPlayer p, String[] args) {
+    if (args.length < 2) {
+      p.sendMessage(new ComponentBuilder("/game delete <game id>").color(ChatColor.RED).create());
+
+      return;
+    }
+    String id = args[1];
+
+    Set<String> games = gameManager.getAvailableGameIds();
+
+    if (!games.contains(id)) {
+      p.sendMessage(new ComponentBuilder("No server with that ID.").color(ChatColor.RED).create());
+      p.sendMessage(new ComponentBuilder("See all games with /game list").color(ChatColor.RED).create());
+
+      return;
+    }
+
+    if (ProxyServer.getInstance().getServers().get(id).getPlayers().size() != 0) {
+      p.sendMessage(new ComponentBuilder("This game cant be deleted. There are still players on here").color(ChatColor.RED).create());
+
+      return;
+    }
+
+    gameManager.deleteGame(id);
+  }
+
   @Override
   public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
     if (args.length == 1) {
-      return List.of("list", "join", "create").stream().filter((s) -> s.startsWith(args[0].toLowerCase())).toList();
+      return List.of("list", "join", "create", "delete").stream().filter((s) -> s.startsWith(args[0].toLowerCase())).toList();
     }
 
     if (args.length != 2) return Collections.emptyList();
@@ -114,6 +143,8 @@ public class GameCommand extends Command implements TabExecutor {
     if (args[0].equalsIgnoreCase("create")) {
       return GameType.allGameStrings().stream().filter((s) -> s.startsWith(args[1].toLowerCase())).toList();
     } else if(args[0].equalsIgnoreCase("join")) {
+      return gameManager.getAvailableGameIds().stream().filter((s) -> s.startsWith(args[1].toLowerCase())).toList();
+    } else if(args[0].equalsIgnoreCase("delete")) {
       return gameManager.getAvailableGameIds().stream().filter((s) -> s.startsWith(args[1].toLowerCase())).toList();
     }
 
