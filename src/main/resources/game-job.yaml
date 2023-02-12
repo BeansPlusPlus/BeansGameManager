@@ -62,7 +62,7 @@ spec:
             - name: AUTOSTOP_TIMEOUT_INIT
               value: 1200
             - name: VIEW_DISTANCE
-              value: 8
+              value: 10
             - name: REMOVE_OLD_MODS
               value: "TRUE"
             - name: SPAWN_PROTECTION
