@@ -37,12 +37,12 @@ jobs:
       - uses: actions/checkout@main
       
       - name: helm login
-        run: echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io -u $ --password-stdin
+        run: echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io -u BeansPlusPlus --password-stdin
         
       - name: helm package
         run: helm package deployment/beans
         
       - name: helm push
         run: |
-          export HELM_EXPERIMENTAL_OCI=1
-          helm push beans-0.1.0.tgz oci://ghcr.io/BeansPlusPlus/beans:${{ github.sha }}
+          export CHART_VERSION=$(grep 'version:' ./example-chart/Chart.yaml | tail -n1 | awk '{ print $2}')
+          helm push beans-${CHART_VERSION}.tgz oci://ghcr.io/BeansPlusPlus
