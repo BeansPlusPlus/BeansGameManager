@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@main
       
       - name: helm login
-        run: echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io -u BeansPlusPlus --password-stdin
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u BeansPlusPlus --password-stdin
         
       - name: helm package
         run: helm package deployment/beans
