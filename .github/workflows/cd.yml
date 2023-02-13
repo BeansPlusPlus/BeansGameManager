@@ -45,4 +45,4 @@ jobs:
       - name: helm push
         run: |
           export CHART_VERSION=$(grep 'version:' deployment/beans/Chart.yaml | tail -n1 | awk '{ print $2}')
-          helm push beans-${CHART_VERSION}.tgz oci://ghcr.io/BeansPlusPlus
+          helm push beans-${CHART_VERSION}.tgz oci://ghcr.io/BeansPlusPlus/charts
