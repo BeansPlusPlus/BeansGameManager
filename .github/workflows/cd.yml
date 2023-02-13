@@ -29,3 +29,18 @@ jobs:
           account_name: saggyresourcepack
           sas_token: ${{ secrets.StorageSAS }}
           overwrite: 'true'
+  
+  helm:
+    name: Helm package and push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      
+      - name: helm login
+        run: echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io -u $ --password-stdin
+        
+      - name: helm package
+        run: helm package deployment/beans
+        
+      - name: helm push
+        run: helm push beans-0.1.0.tgz oci://ghcr.io/BeansPlusPlus
