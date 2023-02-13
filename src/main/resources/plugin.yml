@@ -1,4 +1,4 @@
 name: LobbyPlugin
 main: beansplusplus.lobby.LobbyPlugin
 version: 1.0
-author: Tomay0
+authors: [Isaac-Irvine, Tomay0]
