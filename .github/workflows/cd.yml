@@ -43,4 +43,4 @@ jobs:
         run: helm package deployment/beans
         
       - name: helm push
-        run: helm push beans-0.1.0.tgz oci://ghcr.io/BeansPlusPlus/beans
+        run: helm push beans-0.1.0.tgz oci://ghcr.io/BeansPlusPlus/beans:${{ github.sha }}
