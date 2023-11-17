@@ -51,6 +51,7 @@ public class KubernetesManager {
         if (env.containsKey(key)) {
             return env.get(key);
         }
+        System.out.println("Can't find env called: " + key + ". Using default: " + default_);
         return default_;
     }
 
