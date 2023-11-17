@@ -82,6 +82,7 @@ spec:
         - name: plugins
           hostPath:
             path: {{ .Values.bungeecordPlugins.path }}
+            type: Directory
         {{ end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

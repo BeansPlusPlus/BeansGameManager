@@ -20,7 +20,7 @@ dependencies {
     // https://mvnrepository.com/artifact/io.kubernetes/client-java-api-fluent
     implementation 'io.kubernetes:client-java-api-fluent:15.0.1'
     // https://mvnrepository.com/artifact/io.kubernetes/client-java
-    implementation 'io.kubernetes:client-java:15.0.1'
+    implementation 'io.kubernetes:client-java:18.0.1'
 }
 
 

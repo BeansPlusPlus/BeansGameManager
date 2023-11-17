@@ -1,6 +1,6 @@
 gameStorageClass: "local-path"
 
 bungeecordPlugins:
-  path: /mnt/c/Users/isaac/Software/BeansLobby2/build/libs/
+  path: /run/desktop/mnt/host/c/Users/isaac/Software/BeansLobby2/build/libs/
 
 lobbyAddress: "ellie-lifted:25569"
